@@ -105,16 +105,16 @@ cd ada && gprbuild -P raze_tui.gpr
 | Component | Status | Notes
 
 | Rust Core
-| 🚧 In Progress
-| Basic state management
+| ✅ Complete
+| State types, events, widgets, colors, styles with full test coverage
 
 | Zig Bridge
-| 📋 Planned
-| FFI exports
+| ✅ Complete
+| FFI exports for all core functions, string interop, tests passing
 
 | Ada TUI
-| 📋 Planned
-| ncurses bindings
+| 🚧 In Progress
+| FFI bindings complete, ncurses integration pending
 |===
 
 == License
