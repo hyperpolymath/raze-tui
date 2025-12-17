@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[package]
+name = "raze-core"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+description = "Rust core for RAZE-TUI polyglot TUI framework"
+repository = "https://github.com/hyperpolymath/raze-tui"
+
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+# Minimal dependencies for FFI-safe core
+
+[features]
+default = []
+ffi = []  # Enable FFI exports
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"

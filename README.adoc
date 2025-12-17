@@ -1,0 +1,128 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= RAZE-TUI
+:toc:
+:toc-placement!:
+:icons: font
+
+**R**ust-**A**da-**Z**ig **E**mbedded TUI Library
+
+A polyglot TUI framework using Zig as the FFI bridge between a Rust core and Ada/SPARK presentation layer.
+
+toc::[]
+
+== Architecture
+
+[source]
+----
+┌─────────────────────────────────────────────┐
+│              Ada/SPARK TUI                  │
+│         (Terminal presentation)             │
+└─────────────────┬───────────────────────────┘
+                  │ Zig FFI (C ABI)
+┌─────────────────┴───────────────────────────┐
+│               Zig Bridge                    │
+│    (Type conversion, memory management)     │
+└─────────────────┬───────────────────────────┘
+                  │ Zig FFI (C ABI)
+┌─────────────────┴───────────────────────────┐
+│              Rust Core                      │
+│  (State, business logic, async runtime)     │
+└─────────────────────────────────────────────┘
+----
+
+== Why This Architecture?
+
+* **Rust**: Safe systems programming for the core logic, excellent async support
+* **Zig**: Clean FFI without C toolchain overhead, comptime for zero-cost abstractions
+* **Ada/SPARK**: Formal verification for safety-critical TUI code, strong typing
+
+== Components
+
+=== Rust Core (`rust/`)
+
+The state management and business logic layer.
+
+[source,rust]
+----
+// Core types exported via Zig FFI
+pub struct TuiState { ... }
+pub struct Widget { ... }
+pub struct Event { ... }
+----
+
+=== Zig Bridge (`zig/`)
+
+FFI layer converting between Rust and Ada types.
+
+[source,zig]
+----
+// Exports C ABI for Ada consumption
+export fn raze_init() callconv(.C) *TuiState { ... }
+export fn raze_render(state: *TuiState) callconv(.C) void { ... }
+----
+
+=== Ada/SPARK TUI (`ada/`)
+
+The presentation layer with optional SPARK contracts.
+
+[source,ada]
+----
+-- Main TUI package
+package Raze.Tui is
+   procedure Initialize;
+   procedure Run_Loop;
+   procedure Shutdown;
+end Raze.Tui;
+----
+
+== Building
+
+=== Prerequisites
+
+* Rust 1.75+ (stable)
+* Zig 0.13+
+* GNAT (GCC Ada) or Alire
+* Optional: SPARK Pro for formal verification
+
+=== Build Commands
+
+[source,bash]
+----
+# Build Rust core as static library
+cd rust && cargo build --release
+
+# Build Zig bridge (links Rust library)
+cd zig && zig build -Doptimize=ReleaseFast
+
+# Build Ada TUI (links Zig library)
+cd ada && gprbuild -P raze_tui.gpr
+----
+
+== Status
+
+[cols="1,1,2"]
+|===
+| Component | Status | Notes
+
+| Rust Core
+| 🚧 In Progress
+| Basic state management
+
+| Zig Bridge
+| 📋 Planned
+| FFI exports
+
+| Ada TUI
+| 📋 Planned
+| ncurses bindings
+|===
+
+== License
+
+AGPL-3.0-or-later
+
+== Related Projects
+
+* https://github.com/DutchGhost/zigiffy[zigiffy] - Rust-Zig FFI patterns
+* https://github.com/annexi-strayline/Curses[ANNEXI-STRAYLINE Curses] - Ada ncurses binding
+* https://ratatui.rs[Ratatui] - Rust TUI framework (reference)

@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+cff-version: 1.2.0
+title: RAZE-TUI
+message: >-
+  If you use this software, please cite it using the metadata from this file.
+type: software
+authors:
+  - family-names: Jewell
+    given-names: Jonathan D.A.
+    alias: hyperpolymath
+repository-code: https://github.com/hyperpolymath/raze-tui
+license: AGPL-3.0-or-later
+keywords:
+  - tui
+  - terminal
+  - rust
+  - ada
+  - zig
+  - ffi
+  - polyglot
