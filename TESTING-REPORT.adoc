@@ -1,0 +1,432 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= RAZE-TUI Testing Report
+:toc:
+:toc-placement!:
+:icons: font
+:source-highlighter: rouge
+
+Testing report for the RAZE-TUI polyglot TUI framework.
+
+toc::[]
+
+== Executive Summary
+
+[cols="1,1,1,1"]
+|===
+| Component | Build | Tests | Status
+
+| Rust Core
+| PASS
+| 3/3 passed
+| Fully Functional
+
+| Zig Bridge
+| PASS
+| 2/2 passed
+| Fully Functional
+
+| Ada TUI
+| BLOCKED
+| N/A
+| Missing Dependency (GNAT)
+|===
+
+**Overall Status**: 2/3 components fully tested, 1 component blocked on missing toolchain.
+
+== Test Environment
+
+[source]
+----
+Platform: Linux 6.17.12-300.fc43.x86_64
+Date: 2025-12-29T11:41:50+00:00
+Rust: stable (1.75+)
+Zig: 0.13.0
+GNAT: NOT INSTALLED
+----
+
+== Component: Rust Core
+
+=== Build Configuration
+
+[source,toml]
+----
+[package]
+name = "raze-core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+default = []
+ffi = []
+no_std = []
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+----
+
+=== Build Results
+
+* **Command**: `cargo build --release`
+* **Status**: SUCCESS
+* **Artifacts**:
+** `libraze_core.a` (22 MB static library)
+** `libraze_core.so` (410 KB shared library)
+
+=== Test Results
+
+[source]
+----
+running 3 tests
+test tests::test_event_creation ... ok
+test tests::test_state_creation ... ok
+test tests::test_state_touch ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+----
+
+=== Issues Found and Fixed
+
+==== Issue 1: `no_std` build failure
+
+**Problem**: The code was unconditionally using `#![no_std]` without providing a global allocator or panic handler.
+
+**Error Message**:
+[source]
+----
+error: no global memory allocator found but one is required
+error: `#[panic_handler]` function required, but not found
+----
+
+**Solution**: Changed `no_std` to be feature-gated:
+
+[source,rust]
+----
+// Before:
+#![no_std]
+#![forbid(unsafe_code)]
+extern crate alloc;
+
+// After:
+#![cfg_attr(all(not(test), feature = "no_std"), no_std)]
+#![forbid(unsafe_code)]
+
+#[cfg(all(not(test), feature = "no_std"))]
+extern crate alloc;
+----
+
+**Files Modified**: `/var/home/hyper/repos/raze-tui/rust/src/lib.rs`
+
+==== Issue 2: Missing `no_std` feature in Cargo.toml
+
+**Problem**: The `no_std` feature was used in code but not declared in `Cargo.toml`.
+
+**Solution**: Added `no_std` feature to `Cargo.toml`:
+
+[source,toml]
+----
+[features]
+default = []
+ffi = []
+no_std = []   # Build without std (requires external allocator)
+----
+
+**Files Modified**: `/var/home/hyper/repos/raze-tui/rust/Cargo.toml`
+
+=== Code Quality
+
+* SPDX license header: Present
+* `#![forbid(unsafe_code)]`: Enforced
+* `#[repr(C)]` on FFI types: Correctly applied
+* Documentation: Good coverage with doc comments
+* Test coverage: Core functionality tested
+
+== Component: Zig Bridge
+
+=== Build Configuration
+
+[source,zig]
+----
+// Build static library
+const lib = b.addStaticLibrary(.{
+    .name = "raze_bridge",
+    .root_source_file = b.path("src/bridge.zig"),
+    .target = target,
+    .optimize = optimize,
+});
+
+// Links Rust core
+lib.addLibraryPath(.{ .cwd_relative = "../rust/target/release" });
+lib.linkSystemLibrary("raze_core");
+lib.linkLibC();
+----
+
+=== Build Results
+
+* **Command**: `zig build`
+* **Status**: SUCCESS
+* **Artifacts**:
+** `libraze_bridge.a` (2.0 MB static library)
+
+=== Test Results
+
+* **Command**: `zig build test`
+* **Status**: SUCCESS (silent output indicates all tests passed)
+
+**Test Coverage**:
+[source,zig]
+----
+test "init and shutdown" {
+    const state = raze_init();
+    try std.testing.expect(state != null);
+    try std.testing.expect(raze_is_running());
+
+    raze_shutdown();
+    try std.testing.expect(!raze_is_running());
+}
+
+test "dimensions" {
+    _ = raze_init();
+    defer raze_shutdown();
+
+    raze_set_size(120, 40);
+    try std.testing.expectEqual(@as(u16, 120), raze_get_width());
+    try std.testing.expectEqual(@as(u16, 40), raze_get_height());
+}
+----
+
+=== Issues Found and Fixed
+
+==== Issue 1: Missing `.tool-versions` for asdf
+
+**Problem**: Zig was installed via asdf but no version was specified for the project.
+
+**Solution**: Created `/var/home/hyper/repos/raze-tui/zig/.tool-versions`:
+
+[source]
+----
+zig 0.13.0
+----
+
+**Files Created**: `/var/home/hyper/repos/raze-tui/zig/.tool-versions`
+
+=== Code Quality
+
+* SPDX license header: Present
+* FFI exports with `callconv(.C)`: Correctly applied
+* Type definitions matching Rust: Verified
+* Memory management: Using page allocator
+* String interop: StringBuffer type implemented
+
+== Component: Ada TUI
+
+=== Build Status
+
+**BLOCKED**: GNAT (GCC Ada) compiler not installed on the system.
+
+[source]
+----
+$ gprbuild --version
+bash: gprbuild: command not found
+
+$ rpm -q gcc-gnat
+package gcc-gnat is not installed
+----
+
+=== Code Review (Static Analysis)
+
+==== Issue 1: Missing `with System;` clause
+
+**Problem**: The package body uses `System.Address` but did not import the `System` package.
+
+**Solution**: Added `with System;` to the context clause:
+
+[source,ada]
+----
+-- Before:
+with Interfaces.C; use Interfaces.C;
+
+-- After:
+with System;
+with Interfaces.C; use Interfaces.C;
+----
+
+**Files Modified**: `/var/home/hyper/repos/raze-tui/ada/src/raze-tui.adb`
+
+==== Issue 2: Missing build directories
+
+**Problem**: The GPR file references directories that did not exist.
+
+**Solution**: Created required directories:
+
+[source]
+----
+mkdir -p ada/obj ada/bin ada/spark ada/proof
+----
+
+**Directories Created**:
+* `/var/home/hyper/repos/raze-tui/ada/obj`
+* `/var/home/hyper/repos/raze-tui/ada/bin`
+* `/var/home/hyper/repos/raze-tui/ada/spark`
+* `/var/home/hyper/repos/raze-tui/ada/proof`
+
+=== Code Quality (Manual Review)
+
+* SPDX license header: Present
+* FFI bindings: Correctly declared with `Convention => C`
+* Type mappings: Matching Zig/Rust types
+* SPARK contracts: Preconditions and postconditions defined
+* Ada 2022 features: Enabled via `-gnat2022` switch
+
+=== Recommendations
+
+To build the Ada component, install GNAT:
+
+[source,bash]
+----
+# Fedora/RHEL
+sudo dnf install gcc-gnat gprbuild
+
+# Ubuntu/Debian
+sudo apt install gnat gprbuild
+
+# Via Alire (Ada package manager)
+curl -L https://github.com/alire-project/alire/releases/download/v2.0.1/alr-2.0.1-bin-x86_64-linux.zip -o alr.zip
+unzip alr.zip
+./alr toolchain --select gnat_native
+----
+
+== Summary of Changes Made
+
+[cols="1,2,1"]
+|===
+| File | Change | Reason
+
+| `rust/src/lib.rs`
+| Made `no_std` feature-gated
+| Fix build failure
+
+| `rust/Cargo.toml`
+| Added `no_std` feature
+| Eliminate compiler warnings
+
+| `ada/src/raze-tui.adb`
+| Added `with System;`
+| Fix missing import
+
+| `zig/.tool-versions`
+| Created with `zig 0.13.0`
+| Enable asdf version selection
+
+| `ada/obj/`
+| Created directory
+| GPR build output
+
+| `ada/bin/`
+| Created directory
+| GPR executable output
+
+| `ada/spark/`
+| Created directory
+| SPARK source files
+
+| `ada/proof/`
+| Created directory
+| SPARK proof artifacts
+|===
+
+== Recommendations
+
+=== High Priority
+
+1. **Install GNAT**: The Ada component cannot be tested without the GNAT compiler.
+
+2. **CI/CD Pipeline**: Add GitHub Actions workflow to test all three components:
++
+[source,yaml]
+----
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cd rust && cargo test
+
+  zig:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.13.0
+      - run: cd rust && cargo build --release
+      - run: cd zig && zig build test
+
+  ada:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: alire-project/setup-alire@v3
+      - run: alr toolchain --select gnat_native gprbuild
+      - run: cd rust && cargo build --release
+      - run: cd zig && zig build
+      - run: cd ada && gprbuild -P raze_tui.gpr
+----
+
+=== Medium Priority
+
+3. **Add integration tests**: Test the full FFI chain from Ada to Rust.
+
+4. **Add SPARK proofs**: Enable formal verification for safety-critical code paths.
+
+5. **Add `raze_core` C header generation**: For broader FFI compatibility.
+
+=== Low Priority
+
+6. **Documentation**: Add API documentation for all public functions.
+
+7. **Examples**: Add working example applications.
+
+== Appendix: Full Test Output
+
+=== Rust Tests
+
+[source]
+----
+$ cargo test
+
+   Compiling raze-core v0.1.0 (/var/home/hyper/repos/raze-tui/rust)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.74s
+     Running unittests src/lib.rs (target/debug/deps/raze_core-b703897c95c8b1cd)
+
+running 3 tests
+test tests::test_event_creation ... ok
+test tests::test_state_creation ... ok
+test tests::test_state_touch ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests raze_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+----
+
+=== Zig Build
+
+[source]
+----
+$ zig version
+0.13.0
+
+$ zig build test
+(silent - tests passed)
+
+$ ls -la zig-out/lib/
+-rw-r--r-- 2.0M libraze_bridge.a
+----
