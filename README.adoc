@@ -2,7 +2,7 @@ image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[MPL-2.0,link="https:
 image:https://img.shields.io/badge/Philosophy-Palimpsest-purple.svg[Palimpsest,link="https://github.com/hyperpolymath/palimpsest-licence"]
 
 
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: PMPL-1.0-or-later
 = RAZE-TUI
 
 :toc:
@@ -124,7 +124,7 @@ cd ada && gprbuild -P raze_tui.gpr
 
 == License
 
-AGPL-3.0-or-later
+PMPL-1.0-or-later
 
 == Related Projects
 
