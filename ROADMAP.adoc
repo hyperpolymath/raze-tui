@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: MPL-2.0-or-later
 = RAZE-TUI Roadmap
 
 This roadmap outlines the development plan for RAZE-TUI, a polyglot TUI framework using Rust, Zig, and Ada/SPARK.
