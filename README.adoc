@@ -137,3 +137,8 @@ PMPL-1.0-or-later
 * https://github.com/DutchGhost/zigiffy[zigiffy] - Rust-Zig FFI patterns
 * https://github.com/annexi-strayline/Curses[ANNEXI-STRAYLINE Curses] - Ada ncurses binding
 * https://ratatui.rs[Ratatui] - Rust TUI framework (reference)
+
+
+== Architecture
+
+See link:TOPOLOGY.md[TOPOLOGY.md] for a visual architecture map and completion dashboard.
