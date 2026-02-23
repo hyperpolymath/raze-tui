@@ -1,4 +1,4 @@
-;; SPDX-License-Identifier: AGPL-3.0-or-later
+;; SPDX-License-Identifier: MPL-2.0-or-later
 ;; RAZE-TUI Testing Report
 ;; Generated: 2025-12-29T11:41:50+00:00
 
