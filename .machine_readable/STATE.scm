@@ -1,4 +1,39 @@
 ;; SPDX-License-Identifier: PMPL-1.0-or-later
-(state (metadata (version "0.1.0") (last-updated "2026-02-08") (status active))
-  (project-context (name "language-bridges") (purpose "FFI bridges between languages via Zig") (completion-percentage 20))
-  (components (component "ada-zig-ffi") (component "gleam-zig-ffi") (component "idris2-zig-ffi") (component "julia-zig-ffi") (component "ocaml-zig-ffi") (component "rescript-zig-ffi") (component "rust-zig-ffi") (component "swift-zig-ffi") (component "zig-c-ffi") (component "zig-container-ffi") (component "zig-fuse-ext") (component "zig-libgit2-ffi") (component "zig-nickel-ffi") (component "zig-systemd-ffi") (component "zig-wireguard")))
+;; STATE.scm - Project state for raze-tui
+;; Media-Type: application/vnd.state+scm
+
+(state
+  (metadata
+    (version "0.1.0")
+    (schema-version "1.0")
+    (created "2026-01-03")
+    (updated "2026-03-14")
+    (project "raze-tui")
+    (repo "github.com/hyperpolymath/raze-tui"))
+
+  (project-context
+    (name "raze-tui")
+    (tagline "")
+    (tech-stack ()))
+
+  (current-position
+    (phase "initial")
+    (overall-completion 0)
+    (components ())
+    (working-features ()))
+
+  (route-to-mvp
+    (milestones ()))
+
+  (blockers-and-issues
+    (critical)
+    (high)
+    (medium)
+    (low))
+
+  (critical-next-actions
+    (immediate)
+    (this-week)
+    (this-month))
+
+  (session-history ()))
