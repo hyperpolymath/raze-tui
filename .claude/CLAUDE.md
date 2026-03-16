@@ -3,7 +3,7 @@
 ## READ FIRST
 
 1. Read `0-AI-MANIFEST.a2ml` — canonical file locations
-2. Read `.machine_readable/STATE.a2ml` — current position, TSDM categories, what's done/next
+2. Read `.machine_readable/6a2/STATE.a2ml` — current position, TSDM categories, what's done/next
 3. Follow TSDM: **must** items first, then should, then could
 
 ## Architecture (5-layer, 5-language)

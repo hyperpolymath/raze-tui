@@ -225,9 +225,9 @@ raze-tui/
 │   ├── Cargo.toml
 │   └── src/lib.rs           #   no_std, forbid(unsafe_code)
 ├── .machine_readable/       # SCM checkpoint files
-│   ├── STATE.scm
-│   ├── META.scm
-│   └── ECOSYSTEM.scm
+│   ├── .machine_readable/6a2/STATE.a2ml
+│   ├── .machine_readable/6a2/META.a2ml
+│   └── .machine_readable/6a2/ECOSYSTEM.a2ml
 ├── Justfile                 # Build automation
 ├── ROADMAP.adoc             # Development roadmap
 ├── TOPOLOGY.md              # Architecture topology map
