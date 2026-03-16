@@ -50,17 +50,22 @@ __pycache__/
 *.ali
 /obj/
 /bin/
-/ada/obj/
-/ada/bin/
+/lib/
+/proof/
 
-# Zig
+# Zig (new layout under src/interface/ffi/)
 /zig-cache/
 /zig-out/
-/zig/zig-cache/
-/zig/zig-out/
+/src/interface/ffi/zig-cache/
+/src/interface/ffi/zig-out/
 
-# Rust workspace
-/rust/target/
+# Rust (new layout under src/rust/)
+/src/rust/target/
+/src/rust/Cargo.lock
+
+# Idris2 build artifacts
+/build/
+/src/interface/abi/build/
 
 # Haskell
 /.stack-work/

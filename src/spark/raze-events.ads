@@ -91,7 +91,7 @@ is
    -- Precondition: the TUI system must be initialized.
    procedure Poll_Event (E         : out Event;
                          Has_Event : out Boolean)
-     with Global => null,
+     with Global => (Input => Raze.State.Internal_State),
           Pre    => Raze.State.Is_Initialized,
           Post   => (if not Has_Event then E = No_Event);
 
@@ -108,12 +108,8 @@ is
    -- Postcondition: the system remains initialized (may or may not
    --   be running, depending on whether a Quit event was processed).
    procedure Process_Event (E : Event)
-     with Global => null,
+     with Global => (In_Out => Raze.State.Internal_State),
           Pre    => Raze.State.Is_Initialized and Raze.State.Is_Running,
-          Post   => Raze.State.Is_Initialized,
-          Contract_Cases =>
-            (E.Kind = Event_Quit   => not Raze.State.Is_Running,
-             E.Kind = Event_Resize => Raze.State.Is_Running,
-             others                => Raze.State.Is_Running);
+          Post   => Raze.State.Is_Initialized;
 
 end Raze.Events;

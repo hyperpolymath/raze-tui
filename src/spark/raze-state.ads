@@ -16,7 +16,8 @@
 with Interfaces.C; use Interfaces.C;
 
 package Raze.State
-  with SPARK_Mode => On
+  with SPARK_Mode     => On,
+       Abstract_State => Internal_State
 is
    ---------------------------------------------------------------------------
    -- Constants (matching Idris2 ABI bounds)
@@ -50,8 +51,7 @@ is
    -- Returns True if the TUI system has been successfully initialized
    -- and is currently in the Running phase.
    function Is_Initialized return Boolean
-     with Ghost,
-          Global => null;
+     with Global => Internal_State;
 
    ---------------------------------------------------------------------------
    -- Initialization and shutdown
@@ -63,14 +63,14 @@ is
    -- Width and Height are set to VT100 defaults (80x24).
    -- Version starts at 0.
    procedure Initialize
-     with Global => null,
+     with Global => (In_Out => Internal_State),
           Post   => Is_Initialized;
 
    -- Shut down the TUI system.
    -- Transitions from Running to Stopped.
    -- After this call, Is_Initialized returns False.
    procedure Shutdown
-     with Global => null,
+     with Global => (In_Out => Internal_State),
           Pre    => Is_Initialized,
           Post   => not Is_Initialized;
 
@@ -80,19 +80,19 @@ is
 
    -- Returns the current terminal width in cells.
    function Get_Width return Dimension
-     with Global => null,
+     with Global => Internal_State,
           Pre    => Is_Initialized;
 
    -- Returns the current terminal height in cells.
    function Get_Height return Dimension
-     with Global => null,
+     with Global => Internal_State,
           Pre    => Is_Initialized;
 
    -- Set the terminal dimensions. Bumps the version counter.
    -- The new dimensions must be within the valid range (enforced by
    -- the Dimension subtype).
    procedure Set_Size (W, H : Dimension)
-     with Global => null,
+     with Global => (In_Out => Internal_State),
           Pre    => Is_Initialized,
           Post   => Is_Initialized
                     and then Get_Width = W
@@ -105,7 +105,7 @@ is
    -- Returns the current state version.
    -- This value is monotonically non-decreasing.
    function Get_Version return Version_Number
-     with Global => null,
+     with Global => Internal_State,
           Pre    => Is_Initialized;
 
    ---------------------------------------------------------------------------
@@ -114,12 +114,12 @@ is
 
    -- Returns True if the system is running (not quit-requested).
    function Is_Running return Boolean
-     with Global => null;
+     with Global => Internal_State;
 
    -- Request the system to quit. Sets the running flag to False.
    -- The state remains initialized but the event loop should exit.
    procedure Request_Quit
-     with Global => null,
+     with Global => (In_Out => Internal_State),
           Pre    => Is_Initialized,
           Post   => Is_Initialized and then not Is_Running;
 

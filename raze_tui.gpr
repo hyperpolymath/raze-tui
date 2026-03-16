@@ -1,12 +1,26 @@
 -- SPDX-License-Identifier: PMPL-1.0-or-later
--- RAZE-TUI Ada Project File
+-- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
+--
+-- RAZE-TUI Ada/SPARK Project File
+--
+-- Builds the SPARK core, Ada presentation layer, and C ABI exports.
+-- The Zig FFI bridge and Rust consumer are built separately by their
+-- respective build systems (zig build, cargo build).
 
 project Raze_Tui is
 
-   for Source_Dirs use ("src", "spark");
+   -- Source directories:
+   --   src/spark/  — SPARK-proved core (Raze.State, Events, Widgets, Exports)
+   --   src/ada/    — Ada presentation layer (Raze.Tui, main entry point)
+   for Source_Dirs use ("src/spark", "src/ada");
    for Object_Dir use "obj";
    for Exec_Dir use "bin";
    for Main use ("raze_tui_main.adb");
+
+   -- Library output for the SPARK exports (linked by Zig bridge).
+   for Library_Dir use "lib";
+   for Library_Name use "raze_spark";
+   for Library_Kind use "static";
 
    type Build_Mode is ("debug", "release", "spark");
    Mode : Build_Mode := external ("MODE", "debug");
@@ -30,9 +44,11 @@ project Raze_Tui is
    end Binder;
 
    package Linker is
-      -- Link against Zig bridge library
-      for Default_Switches ("Ada") use
-        ("-L../zig/zig-out/lib", "-lraze_bridge", "-lc");
+      -- When building the executable, link against the Zig bridge
+      -- (only needed if the Ada presentation layer calls through FFI;
+      -- in the current architecture Ada calls SPARK directly, so this
+      -- is here for future extensibility).
+      for Default_Switches ("Ada") use ("-lc");
    end Linker;
 
    package Prove is
