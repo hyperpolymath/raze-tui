@@ -41,7 +41,7 @@ This roadmap outlines the development plan for RAZE-TUI, a polyglot TUI framewor
 - [x] **Security & Governance**
   - Comprehensive SECURITY.md policy
   - Provenance tracking (.well-known/provenance.json)
-  - Dual license (MIT OR AGPL-3.0-or-later)
+  - Dual license (MIT OR PMPL-1.0-or-later)
   - AI training consent requirements
 
 ---

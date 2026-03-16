@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: AGPL-3.0-or-later
+-- SPDX-License-Identifier: PMPL-1.0-or-later
 -- RAZE-TUI Ada Bindings
 --
 -- This package provides Ada bindings to the RAZE Zig bridge,
