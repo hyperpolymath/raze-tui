@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: PMPL-1.0-or-later
 //! RAZE-TUI Zig Bridge build configuration
 //!
 //! Builds the FFI bridge between Rust core and Ada TUI.

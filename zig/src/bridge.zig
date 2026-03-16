@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: PMPL-1.0-or-later
 //! RAZE Bridge - Zig FFI layer between Rust core and Ada TUI
 //!
 //! This module provides C ABI exports for Ada consumption and handles
