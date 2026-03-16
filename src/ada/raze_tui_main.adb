@@ -7,6 +7,7 @@
 -- (Raze.Tui), which delegates to the SPARK-proved core.
 
 with Ada.Text_IO; use Ada.Text_IO;
+with Interfaces.C;
 with Raze.Tui;
 with Raze.State;
 with Raze.Events;
