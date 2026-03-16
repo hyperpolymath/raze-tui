@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Clade declaration — part of the gv-clade-index registry
+# See: https://github.com/hyperpolymath/gv-clade-index
+
+[identity]
+uuid = "44ee6af8-2055-5838-9ad8-eca06b312d28"
+primary-forge = "github"
+primary-owner = "hyperpolymath"
+canonical-name = "raze-tui"
+prefixed-name = "ap-raze-tui"
+
+[clade]
+primary = "ap"
+secondary = []
+assigned = "2026-03-16"
+rationale = ""
+
+[forges]
+github = "hyperpolymath/raze-tui"
+gitlab = "hyperpolymath/raze-tui"
+bitbucket = "hyperpolymath/raze-tui"
+
+[lineage]
+type = "standalone"
+parent = "TUI application framework"
+born = "2026-03-16"
