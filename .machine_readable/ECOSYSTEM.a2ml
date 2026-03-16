@@ -1,10 +1,50 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# ECOSYSTEM.a2ml — Ecosystem position
-# Converted from ECOSYSTEM.scm on 2026-03-15
+# ECOSYSTEM.a2ml — Ecosystem position and relationships
+# Updated: 2026-03-16
 
 [metadata]
 project = "raze-tui"
 ecosystem = "hyperpolymath"
 
 [position]
-type = "component"
+type = "library"
+purpose = "Polyglot TUI framework with formally verified core"
+domain = "terminal-user-interface"
+
+[related-projects]
+
+[related-projects.panll]
+relationship = "consumer"
+description = "PanLL can render panels as TUI widgets via raze-tui"
+integration = "raze-tui implements PanLL panel renderer for terminal contexts"
+
+[related-projects.proven]
+relationship = "dependency"
+description = "Shared formally verified Idris2 library"
+integration = "raze-tui ABI may import proven primitives (state machines, bounded types)"
+
+[related-projects.proven-servers]
+relationship = "sibling"
+description = "Formally verified protocol implementations"
+integration = "raze-tui could use proven-servers FSM for event loop state machine"
+
+[related-projects.typell]
+relationship = "substrate"
+description = "PanLL's type-theory engine"
+integration = "TypeLL type constraints could validate raze-tui widget layouts"
+
+[related-projects.session-sentinel]
+relationship = "consumer"
+description = "Session Sentinel could use raze-tui for its TUI diagnostic mode"
+integration = "session-sentinel --tui would render health dashboard via raze-tui widgets"
+
+[related-projects.idaptik]
+relationship = "potential-consumer"
+description = "IDApTIK's level architect could use raze-tui for terminal-based level editing"
+
+[languages]
+idris2 = "ABI specifications with dependent type proofs"
+spark = "Formally verified core implementation"
+ada = "Terminal presentation layer"
+zig = "Pure FFI bridge (zero logic)"
+rust = "Ecosystem integration and async support"

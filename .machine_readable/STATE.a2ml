@@ -1,14 +1,117 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
 # STATE.a2ml — Project state checkpoint
-# Converted from STATE.scm on 2026-03-15
+# Updated: 2026-03-16
 
 [metadata]
 project = "raze-tui"
 version = "0.1.0"
-last-updated = "2026-03-15"
+last-updated = "2026-03-16"
 status = "active"
 
 [project-context]
-name = "raze-tui"
-completion-percentage = 0
-phase = "In development"
+name = "RAZE-TUI — Rust-Ada-Zig Embedded TUI Framework"
+completion-percentage = 15
+phase = "Phase 1 — Idris2 ABI + SPARK core restructure"
+description = "Polyglot TUI framework with SPARK verified core, Idris2 ABI proofs, and pure Zig FFI bridge"
+
+[architecture]
+layers = ["idris2-abi", "generated-c-headers", "zig-ffi", "spark-core", "ada-presentation", "rust-consumer"]
+verified-layers = ["idris2-abi", "spark-core"]
+bridge-layer = "zig-ffi"
+
+[current-position]
+completed = [
+    "Initial polyglot scaffolding (Phase 0)",
+    "Basic type definitions across Rust/Ada/Zig",
+    "repr(C) ABI alignment between languages",
+    "Idris2 ABI definitions (State, Events, Widgets)",
+    "SPARK core packages with Pre/Post contracts",
+    "Pure Zig FFI bridge (zero-logic forwarding)",
+    "Architecture restructure to standard ABI/FFI layout"
+]
+in-progress = [
+    "SPARK proof discharge (GNATprove)",
+    "Terminal backend (ANSI rendering, raw mode)"
+]
+next = [
+    "Event polling via SPARK",
+    "Widget system (Box, Text, Input, List)",
+    "Rust async bridge (tokio event loop)",
+    "PanLL panel renderer"
+]
+
+[blockers-and-issues]
+blockers = []
+risks = [
+    "GNAT/SPARK toolchain availability on Fedora Atomic",
+    "Zig 0.13 C ABI interop with GNAT-compiled objects"
+]
+
+[route-to-mvp]
+milestone-1 = "SPARK core compiles and passes GNATprove"
+milestone-2 = "Zig bridge links SPARK and Rust successfully"
+milestone-3 = "Basic terminal rendering (clear, draw text, handle resize)"
+milestone-4 = "Interactive demo: text input with SPARK-verified state"
+
+[tsdm]
+# Triaxial Software Development Methodology categories
+
+[tsdm.scoping]
+must = [
+    "Idris2 ABI with dependent type proofs for all public interfaces",
+    "SPARK core with Pre/Post on every subprogram",
+    "Pure Zig FFI bridge (zero logic)",
+    "Ada presentation layer consuming SPARK directly",
+    "Rust consumer via Zig bridge",
+    "RSR compliance (all standard files, workflows, contractiles)",
+    "panic-attack assail before every commit",
+    "proven repo swap-outs where formally verified alternatives exist"
+]
+should = [
+    "GNATprove Silver level on all SPARK packages",
+    "Terminal backend with raw mode and ANSI rendering",
+    "Widget system with at least 5 widget types",
+    "PanLL panel manifest for TUI panel rendering"
+]
+could = [
+    "Rust async integration via tokio",
+    "Multi-terminal split pane support",
+    "Accessibility (screen reader, high contrast)",
+    "WASM target for browser-based TUI"
+]
+
+[tsdm.maintenance]
+corrective = [
+    "Fix any SPARK proof failures as they arise",
+    "Fix Zig bridge type mismatches",
+    "Fix Rust FFI safety issues"
+]
+adaptive = [
+    "Track Zig version updates (0.13+)",
+    "Track GNAT/SPARK updates",
+    "Track Rust edition changes",
+    "Adapt to PanLL protocol changes"
+]
+perfective = [
+    "Optimise terminal rendering (batch writes, double buffering)",
+    "Reduce Zig bridge overhead (inline where possible)",
+    "Improve SPARK proof coverage from Silver to Gold"
+]
+
+[tsdm.audit]
+systems = [
+    "CI/CD: build all 4 languages, run GNATprove, run Zig tests, run Rust tests",
+    "Contractiles: must/trust/dust/intend checks all green",
+    "Hypatia scan: no violations"
+]
+compliance = [
+    "SPDX headers on all files",
+    "Author attribution correct",
+    "No banned patterns (believe_me, assert_total, sorry, unsafe)",
+    "License PMPL-1.0-or-later throughout"
+]
+effects = [
+    "Performance benchmarks for terminal rendering",
+    "Memory usage under sustained TUI operation",
+    "Proof coverage percentage (GNATprove)"
+]

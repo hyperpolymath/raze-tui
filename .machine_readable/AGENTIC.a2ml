@@ -2,10 +2,10 @@
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # AGENTIC.a2ml — AI agent constraints and capabilities
-# Defines what AI agents can and cannot do in this repository.
+# Updated: 2026-03-16
 
 [metadata]
-version = "0.1.0"
+version = "0.2.0"
 last-updated = "2026-03-16"
 
 [agent-permissions]
@@ -17,8 +17,34 @@ can-create-files = true
 
 [agent-constraints]
 # What AI agents must NOT do:
-# - Never use banned language patterns (believe_me, unsafeCoerce, etc.)
+# - Never use banned patterns (believe_me, assert_total, sorry, unsafeCoerce, Obj.magic, unsafe)
 # - Never commit secrets or credentials
 # - Never use banned languages (TypeScript, Python, Go, etc.)
 # - Never place state files in repository root (must be in .machine_readable/)
 # - Never use AGPL license (use PMPL-1.0-or-later)
+# - Never add logic to the Zig FFI bridge (must remain pure pass-through)
+# - Never use unsafe in Rust (crate uses #![forbid(unsafe_code)])
+
+[session-start]
+actions = [
+    "Read 0-AI-MANIFEST.a2ml FIRST",
+    "Read .machine_readable/STATE.a2ml for current position and TSDM categories",
+    "Check TSDM scoping: must items FIRST, then should, then could",
+    "Check proven repo for formally verified alternatives before writing new code",
+    "Offer to continue Phase 1 work (SPARK proofs, terminal backend)"
+]
+
+[pre-commit]
+actions = [
+    "Run panic-attack assail",
+    "Verify SPDX headers on all changed files",
+    "Verify no banned patterns in any language",
+    "Update .machine_readable/STATE.a2ml if completion changed"
+]
+
+[language-roles]
+idris2 = { role = "ABI specification", location = "src/interface/abi/", editable = true }
+spark = { role = "Verified implementation", location = "src/spark/", editable = true }
+ada = { role = "Presentation layer", location = "src/ada/", editable = true }
+zig = { role = "Pure FFI bridge ONLY", location = "src/interface/ffi/", editable = "bridge-only" }
+rust = { role = "Consumer/ecosystem", location = "src/rust/", editable = true }
