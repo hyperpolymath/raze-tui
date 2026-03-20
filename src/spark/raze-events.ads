@@ -95,6 +95,11 @@ is
           Pre    => Raze.State.Is_Initialized,
           Post   => (if not Has_Event then E = No_Event);
 
+   -- Push an event into the pending buffer (called from Raze.Posix).
+   -- This bridges the non-SPARK I/O layer and the SPARK event system.
+   procedure Push_Event (E : Event)
+     with SPARK_Mode => Off;
+
    ---------------------------------------------------------------------------
    -- Event processing
    ---------------------------------------------------------------------------
