@@ -4,32 +4,47 @@
 -- RAZE-TUI Demo Application
 --
 -- Entry point for the TUI demo. Uses the Ada presentation layer
--- (Raze.Tui), which delegates to the SPARK-proved core.
+-- (Raze.Tui), which delegates to the SPARK-proved core. The demo
+-- enters the alternate screen, displays terminal size, and responds
+-- to keyboard/mouse events until the user presses 'q' or Ctrl+C.
 
-with Ada.Text_IO; use Ada.Text_IO;
 with Interfaces.C;
 with Raze.Tui;
 with Raze.State;
 with Raze.Events;
+with Raze.Posix;
+with Raze.Terminal;
+with Raze.Input_Parser;
 
 procedure Raze_Tui_Main is
    use Raze.Events;
    E : Event;
 begin
-   Put_Line ("RAZE-TUI Demo");
-   Put_Line ("=============");
-
-   -- Initialize TUI (delegates to SPARK core).
+   -- Initialize TUI (SPARK core + raw mode + alt screen).
    Raze.Tui.Initialize;
 
    if not Raze.Tui.Is_Running then
-      Put_Line ("Error: Failed to initialize TUI");
+      -- If raw mode failed (e.g. not a terminal), fall back to text output.
+      Raze.Posix.Write_Str ("Error: Failed to initialize TUI (not a terminal?)" & ASCII.LF);
       return;
    end if;
 
-   Put_Line ("Terminal size:" &
-             Raze.Tui.Width'Image & "x" &
-             Raze.Tui.Height'Image);
+   -- Display initial info in the alternate screen.
+   Raze.Posix.Write_Escape (Raze.Terminal.Cursor_To (1, 1));
+   Raze.Posix.Write_Escape (Raze.Terminal.Set_Bold);
+   Raze.Posix.Write_Str ("RAZE-TUI Demo");
+   Raze.Posix.Write_Escape (Raze.Terminal.Reset_Attrs);
+
+   Raze.Posix.Write_Escape (Raze.Terminal.Cursor_To (2, 1));
+   Raze.Posix.Write_Str ("Terminal:" &
+                          Raze.Tui.Width'Image & "x" &
+                          Raze.Tui.Height'Image);
+
+   Raze.Posix.Write_Escape (Raze.Terminal.Cursor_To (3, 1));
+   Raze.Posix.Write_Str ("Press 'q' to quit, type to see key codes.");
+
+   Raze.Posix.Write_Escape (Raze.Terminal.Cursor_To (5, 1));
+   Raze.Posix.Flush_Output;
 
    -- Main event loop.
    while Raze.Tui.Is_Running loop
@@ -37,16 +52,28 @@ begin
 
       case E.Kind is
          when Event_Key =>
-            Put_Line ("Key pressed: " & E.Key_Code'Image);
+            -- Check for quit key ('q' = 0x71).
+            if E.Key_Code = Character'Pos ('q') and E.Mods = Mod_None then
+               exit;
+            end if;
+
+            -- Check for Ctrl+C.
+            if E.Key_Code = Character'Pos ('c') and E.Mods = Mod_Ctrl then
+               exit;
+            end if;
+
+            -- Display key info.
+            Raze.Posix.Write_Escape (Raze.Terminal.Clear_Line);
+            Raze.Posix.Write_Str ("Key:" & E.Key_Code'Image &
+                                  " Mods:" & E.Mods'Image);
+            Raze.Posix.Write_Str (ASCII.CR & ASCII.LF);
+            Raze.Posix.Flush_Output;
 
          when Event_Quit =>
-            Put_Line ("Quit requested");
             exit;
 
          when Event_Resize =>
-            Put_Line ("Resize:" &
-                      E.Mouse_X'Image & "x" & E.Mouse_Y'Image);
-            -- Clamp and apply via the presentation layer.
+            -- Update dimensions.
             if E.Mouse_X >= Interfaces.C.unsigned_short (Raze.State.Min_Dimension)
                and then E.Mouse_X <= Interfaces.C.unsigned_short (Raze.State.Max_Dimension)
                and then E.Mouse_Y >= Interfaces.C.unsigned_short (Raze.State.Min_Dimension)
@@ -56,13 +83,20 @@ begin
                                   Raze.State.Dimension (E.Mouse_Y));
             end if;
 
+            -- Redraw size info.
+            Raze.Posix.Write_Escape (Raze.Terminal.Cursor_To (2, 1));
+            Raze.Posix.Write_Escape (Raze.Terminal.Clear_Line);
+            Raze.Posix.Write_Str ("Terminal:" &
+                                  Raze.Tui.Width'Image & "x" &
+                                  Raze.Tui.Height'Image);
+            Raze.Posix.Flush_Output;
+
          when others =>
             null;
       end case;
    end loop;
 
-   -- Cleanup.
+   -- Cleanup: restore terminal, leave alt screen.
    Raze.Tui.Shutdown;
-   Put_Line ("Goodbye!");
 
 end Raze_Tui_Main;

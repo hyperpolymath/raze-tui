@@ -1,17 +1,17 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
 # STATE.a2ml — Project state checkpoint
-# Updated: 2026-03-16
+# Updated: 2026-03-20
 
 [metadata]
 project = "raze-tui"
-version = "0.1.0"
-last-updated = "2026-03-16"
+version = "0.2.0"
+last-updated = "2026-03-20"
 status = "active"
 
 [project-context]
 name = "RAZE-TUI — Rust-Ada-Zig Embedded TUI Framework"
-completion-percentage = 15
-phase = "Phase 1 — Idris2 ABI + SPARK core restructure"
+completion-percentage = 35
+phase = "Phase 2 — Terminal backend + GNATprove + contractiles"
 description = "Polyglot TUI framework with SPARK verified core, Idris2 ABI proofs, and pure Zig FFI bridge"
 
 [architecture]
@@ -27,15 +27,22 @@ completed = [
     "Idris2 ABI definitions (State, Events, Widgets)",
     "SPARK core packages with Pre/Post contracts",
     "Pure Zig FFI bridge (zero-logic forwarding)",
-    "Architecture restructure to standard ABI/FFI layout"
+    "Architecture restructure to standard ABI/FFI layout",
+    "RSR compliance audit — 17/17 workflows, all docs",
+    "Terminal backend: SPARK ANSI escape sequence generator (Raze.Terminal)",
+    "Terminal backend: SPARK input parser (Raze.Input_Parser)",
+    "Terminal backend: POSIX raw mode wrapper (Raze.Posix)",
+    "Terminal backend: wired event loop with real input parsing",
+    "Contractiles: must/trust/dust/intend all populated",
+    "Demo app: alternate screen, key display, resize handling"
 ]
 in-progress = [
-    "SPARK proof discharge (GNATprove)",
-    "Terminal backend (ANSI rendering, raw mode)"
+    "SPARK proof discharge (GNATprove) — awaiting GNAT toolchain",
+    "Widget rendering pipeline (draw widgets to terminal)"
 ]
 next = [
-    "Event polling via SPARK",
     "Widget system (Box, Text, Input, List)",
+    "Double-buffered rendering (cell diff)",
     "Rust async bridge (tokio event loop)",
     "PanLL panel renderer"
 ]

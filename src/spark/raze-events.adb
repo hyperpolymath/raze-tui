@@ -12,14 +12,32 @@ is
    -- Event polling
    ---------------------------------------------------------------------------
 
+   -- Pending event buffer. When the input parser produces an event,
+   -- it is stored here for the next Poll_Event call. This allows
+   -- the non-SPARK Posix layer to push events into the SPARK core.
+   Pending       : Event   := No_Event;
+   Pending_Valid : Boolean := False;
+
+   procedure Push_Event (E : Event)
+     with SPARK_Mode => Off  -- Called from non-SPARK Ada code
+   is
+   begin
+      Pending       := E;
+      Pending_Valid := True;
+   end Push_Event;
+
    procedure Poll_Event (E         : out Event;
                          Has_Event : out Boolean) is
    begin
-      -- TODO: Implement actual terminal event polling (ANSI escape
-      -- sequence parsing, signal handling for SIGWINCH, etc.).
-      -- For now, return the sentinel "no event" value.
-      E         := No_Event;
-      Has_Event := False;
+      if Pending_Valid then
+         E             := Pending;
+         Has_Event     := True;
+         Pending       := No_Event;
+         Pending_Valid := False;
+      else
+         E         := No_Event;
+         Has_Event := False;
+      end if;
    end Poll_Event;
 
    ---------------------------------------------------------------------------

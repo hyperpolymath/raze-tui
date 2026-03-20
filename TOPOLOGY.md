@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
 <!-- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) -->
 <!-- TOPOLOGY.md -- Project architecture map and completion dashboard -->
-<!-- Last updated: 2026-03-16 -->
+<!-- Last updated: 2026-03-20 -->
 
 # RAZE-TUI -- Project Topology
 
@@ -206,9 +206,9 @@ CORE LAYERS
   Rust Consumer                    ██████████ 100%    no_std types, events, widgets
 
 TERMINAL BACKEND
-  Input Parsing                    ░░░░░░░░░░   0%    Phase 2
-  ANSI Rendering                   ░░░░░░░░░░   0%    Phase 2
-  Raw Mode / Signals               ░░░░░░░░░░   0%    Phase 2
+  Input Parsing                    ██████████ 100%    SPARK Raze.Input_Parser (CSI, keys, Ctrl)
+  ANSI Rendering                   ██████████ 100%    SPARK Raze.Terminal (cursor, SGR, alt screen)
+  Raw Mode / Signals               ████████░░  80%    Raze.Posix (raw mode, read, write, ioctl)
 
 WIDGET SYSTEM
   Layout Engine                    ░░░░░░░░░░   0%    Phase 3
@@ -221,7 +221,14 @@ INFRASTRUCTURE
   Test Suite                       ██████████ 100%    Rust + Zig coverage
 
 ─────────────────────────────────────────────────────────────────────────────
-OVERALL:                            ████░░░░░░  ~40%   Phase 1 restructure in progress
+CONTRACTILES
+  must/                            ██████████ 100%    SPARK integrity, bridge purity, license
+  trust/                           ██████████ 100%    Secrets, provenance, container security
+  dust/                            ██████████ 100%    Build artifacts, doc freshness, hygiene
+  intend/                          ██████████ 100%    ABI modules, proof infra, terminal backend
+
+─────────────────────────────────────────────────────────────────────────────
+OVERALL:                            ██████░░░░  ~55%   Phase 2 terminal backend complete
 ```
 
 ## Build Dependency Chain
@@ -249,10 +256,13 @@ Step  Tool       Input                          Output
 | `generated/abi/raze_abi.h` | C | Foreign.idr (generated) | C struct/function decls |
 | `zig/src/bridge.zig` | Zig | raze_abi.h | C ABI exports, lifetime mgmt |
 | `ada/src/raze.ads` | Ada | raze_abi.h | Root package, FFI type bindings |
-| `ada/src/raze-tui.ads` | SPARK | raze.ads | TUI interface, contracts |
-| `ada/src/raze-tui.adb` | SPARK | raze-tui.ads, bridge.zig | Proven implementation |
-| `ada/src/raze_tui_main.adb` | Ada | raze-tui.ads | Entry point |
-| `rust/src/lib.rs` | Rust | bridge.zig (C ABI) | Consumer crate |
+| `src/spark/raze-terminal.ads` | SPARK | Raze.State, Raze.Widgets | ANSI escape sequence generation |
+| `src/spark/raze-input_parser.ads` | SPARK | Raze.Events | Byte-to-event parsing |
+| `src/ada/raze-posix.ads` | Ada | Raze.Terminal, Raze.Input_Parser | POSIX raw mode, I/O |
+| `src/ada/raze-tui.ads` | Ada | Raze.State, Raze.Events | TUI interface, contracts |
+| `src/ada/raze-tui.adb` | Ada | Raze.Posix, Raze.Terminal, Raze.Input_Parser | Integration layer |
+| `src/ada/raze_tui_main.adb` | Ada | Raze.Tui | Entry point demo |
+| `src/rust/src/lib.rs` | Rust | bridge.zig (C ABI) | Consumer crate |
 
 ## Update Protocol
 
