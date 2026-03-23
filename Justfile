@@ -50,6 +50,9 @@ test: test-zig test-rust
 fmt:
     cd src/rust && cargo fmt
 
+# Check formatting without modifying
+fmt-check:
+    cargo fmt --all --check
 # Lint Rust code.
 lint:
     cd src/rust && cargo clippy -- -D warnings
@@ -66,10 +69,6 @@ run: build-ada
     ./bin/raze_tui_main
 
 # [AUTO-GENERATED] Multi-arch / RISC-V target.
-build-riscv:
-    @echo "Building for RISC-V..."
-    cd src/rust && cross build --target riscv64gc-unknown-linux-gnu
-
 # Run panic-attacker pre-commit scan
 assail:
     @command -v panic-attack >/dev/null 2>&1 && panic-attack assail . || echo "panic-attack not found — install from https://github.com/hyperpolymath/panic-attacker"

@@ -17,11 +17,6 @@ project Raze_Tui is
    for Exec_Dir use "bin";
    for Main use ("raze_tui_main.adb");
 
-   -- Library output for the SPARK exports (linked by Zig bridge).
-   for Library_Dir use "lib";
-   for Library_Name use "raze_spark";
-   for Library_Kind use "static";
-
    type Build_Mode is ("debug", "release", "spark");
    Mode : Build_Mode := external ("MODE", "debug");
 
@@ -29,7 +24,7 @@ project Raze_Tui is
       case Mode is
          when "debug" =>
             for Default_Switches ("Ada") use
-              ("-g", "-gnatwa", "-gnatwe", "-gnata", "-gnat2022");
+              ("-g", "-gnatwa", "-gnata", "-gnat2022");
          when "release" =>
             for Default_Switches ("Ada") use
               ("-O2", "-gnatn", "-gnat2022");

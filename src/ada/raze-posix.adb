@@ -7,7 +7,7 @@
 -- This is the ONLY file in the project that touches POSIX calls.
 
 with System;
-with Interfaces.C; use Interfaces.C;
+with Interfaces.C; use Interfaces.C; use type Interfaces.C.int;
 with Raze.Terminal;
 with Raze.Input_Parser;
 
@@ -191,7 +191,7 @@ package body Raze.Posix is
       -- Save original fcntl flags and set non-blocking.
       Original_Flags := C_fcntl_get (STDIN_FD, F_GETFL);
       Flags := C_fcntl_set (STDIN_FD, F_SETFL,
-                            Original_Flags or int (O_NONBLOCK));
+                            int (unsigned (Original_Flags) or unsigned (O_NONBLOCK)));
       pragma Unreferenced (Flags);
 
       Raw_Mode_Active := True;

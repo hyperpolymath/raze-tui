@@ -8,7 +8,7 @@
 -- enters the alternate screen, displays terminal size, and responds
 -- to keyboard/mouse events until the user presses 'q' or Ctrl+C.
 
-with Interfaces.C;
+with Interfaces.C; use Interfaces.C;
 with Raze.Tui;
 with Raze.State;
 with Raze.Events;

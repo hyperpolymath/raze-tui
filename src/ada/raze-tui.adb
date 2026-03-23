@@ -8,6 +8,7 @@
 -- (Raze.Input_Parser). This is the integration point where non-SPARK
 -- I/O meets SPARK-proved logic.
 
+with Interfaces.C; use Interfaces.C;
 with Raze.State;
 with Raze.Events;
 with Raze.Posix;

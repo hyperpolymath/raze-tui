@@ -57,7 +57,7 @@ is
           Post => Seq.Length >= Seq.Length'Old
                   and then Seq.Length <= Seq.Length'Old + 5
    is
-      Digits : array (1 .. 5) of Natural;
+      Digit_Buf : array (1 .. 5) of Natural;
       Count  : Natural := 0;
       Val    : Natural := N;
    begin
@@ -69,14 +69,14 @@ is
       -- Extract digits in reverse order.
       while Val > 0 and Count < 5 loop
          Count := Count + 1;
-         Digits (Count) := Val mod 10;
+         Digit_Buf (Count) := Val mod 10;
          Val := Val / 10;
       end loop;
 
       -- Emit digits in forward order.
       for I in reverse 1 .. Count loop
          pragma Loop_Invariant (Seq.Length < Max_Escape_Length);
-         Append_Char (Seq, C (Character'Val (Digits (I) + Character'Pos ('0'))));
+         Append_Char (Seq, C (Character'Val (Digit_Buf (I) + Character'Pos ('0'))));
       end loop;
    end Append_Num;
 

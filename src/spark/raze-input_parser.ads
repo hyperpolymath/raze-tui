@@ -20,8 +20,7 @@ with Interfaces.C; use Interfaces.C;
 with Raze.Events;
 
 package Raze.Input_Parser
-  with SPARK_Mode => On,
-       Pure
+  with SPARK_Mode => On
 is
    ---------------------------------------------------------------------------
    -- Input buffer type

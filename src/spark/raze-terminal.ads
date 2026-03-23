@@ -19,8 +19,7 @@ with Raze.State;
 with Raze.Widgets;
 
 package Raze.Terminal
-  with SPARK_Mode => On,
-       Pure
+  with SPARK_Mode => On
 is
    ---------------------------------------------------------------------------
    -- Output buffer type
