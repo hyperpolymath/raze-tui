@@ -119,7 +119,7 @@ extern crate alloc;
 extern crate alloc;
 ----
 
-**Files Modified**: `/var/home/hyper/repos/raze-tui/rust/src/lib.rs`
+**Files Modified**: `/var$HOME/repos/raze-tui/rust/src/lib.rs`
 
 ==== Issue 2: Missing `no_std` feature in Cargo.toml
 
@@ -135,7 +135,7 @@ ffi = []
 no_std = []   # Build without std (requires external allocator)
 ----
 
-**Files Modified**: `/var/home/hyper/repos/raze-tui/rust/Cargo.toml`
+**Files Modified**: `/var$HOME/repos/raze-tui/rust/Cargo.toml`
 
 === Code Quality
 
@@ -205,14 +205,14 @@ test "dimensions" {
 
 **Problem**: Zig was installed via asdf but no version was specified for the project.
 
-**Solution**: Created `/var/home/hyper/repos/raze-tui/zig/.tool-versions`:
+**Solution**: Created `/var$HOME/repos/raze-tui/zig/.tool-versions`:
 
 [source]
 ----
 zig 0.13.0
 ----
 
-**Files Created**: `/var/home/hyper/repos/raze-tui/zig/.tool-versions`
+**Files Created**: `/var$HOME/repos/raze-tui/zig/.tool-versions`
 
 === Code Quality
 
@@ -255,7 +255,7 @@ with System;
 with Interfaces.C; use Interfaces.C;
 ----
 
-**Files Modified**: `/var/home/hyper/repos/raze-tui/ada/src/raze-tui.adb`
+**Files Modified**: `/var$HOME/repos/raze-tui/ada/src/raze-tui.adb`
 
 ==== Issue 2: Missing build directories
 
@@ -269,10 +269,10 @@ mkdir -p ada/obj ada/bin ada/spark ada/proof
 ----
 
 **Directories Created**:
-* `/var/home/hyper/repos/raze-tui/ada/obj`
-* `/var/home/hyper/repos/raze-tui/ada/bin`
-* `/var/home/hyper/repos/raze-tui/ada/spark`
-* `/var/home/hyper/repos/raze-tui/ada/proof`
+* `/var$HOME/repos/raze-tui/ada/obj`
+* `/var$HOME/repos/raze-tui/ada/bin`
+* `/var$HOME/repos/raze-tui/ada/spark`
+* `/var$HOME/repos/raze-tui/ada/proof`
 
 === Code Quality (Manual Review)
 
@@ -399,7 +399,7 @@ jobs:
 ----
 $ cargo test
 
-   Compiling raze-core v0.1.0 (/var/home/hyper/repos/raze-tui/rust)
+   Compiling raze-core v0.1.0 (/var$HOME/repos/raze-tui/rust)
     Finished `test` profile [unoptimized + debuginfo] target(s) in 12.74s
      Running unittests src/lib.rs (target/debug/deps/raze_core-b703897c95c8b1cd)
 
