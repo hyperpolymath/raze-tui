@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 = RAZE-TUI
-
+:author: Jonathan D.A. Jewell
 :toc:
 :toc-placement!:
 :icons: font
+:source-highlighter: rouge
 
-**R**ust-**A**da-**Z**ig **E**mbedded TUI Library
+**R**ust-**A**da-**Z**ig **E**mbedded TUI -- a polyglot terminal user interface
+framework where every layer earns its place through formal guarantees.
 
-A polyglot TUI framework using Zig as the FFI bridge between a Rust core and Ada/SPARK presentation layer.
+RAZE-TUI combines five languages into a verification pipeline: Idris2 proves
+that interfaces are correct, generated C headers enforce ABI stability, Zig
+provides a zero-overhead FFI bridge, SPARK/Ada proves that implementation is
+correct, and Rust provides ecosystem integration with async support.
 
 toc::[]
 
@@ -15,118 +21,265 @@ toc::[]
 
 [source]
 ----
-┌─────────────────────────────────────────────┐
-│              Ada/SPARK TUI                  │
-│         (Terminal presentation)             │
-└─────────────────┬───────────────────────────┘
-                  │ Zig FFI (C ABI)
-┌─────────────────┴───────────────────────────┐
-│               Zig Bridge                    │
-│    (Type conversion, memory management)     │
-└─────────────────┬───────────────────────────┘
-                  │ Zig FFI (C ABI)
-┌─────────────────┴───────────────────────────┐
-│              Rust Core                      │
-│  (State, business logic, async runtime)     │
-└─────────────────────────────────────────────┘
+                    ┌─────────────────────────────────────────────────────┐
+                    │               Layer 5: CONSUMERS                   │
+                    │  ┌──────────────────┐   ┌───────────────────────┐  │
+                    │  │   Ada / SPARK    │   │     Rust Consumer     │  │
+                    │  │  (native TUI     │   │  (async integration,  │  │
+                    │  │   presentation)  │   │   tokio/smol bridge)  │  │
+                    │  └────────┬─────────┘   └───────────┬───────────┘  │
+                    └───────────┼──────────────────────────┼─────────────┘
+                                │ direct SPARK access      │ via Zig C ABI
+                    ┌───────────┼──────────────────────────┼─────────────┐
+                    │           │    Layer 4: SPARK CORE   │             │
+                    │           ▼                          │             │
+                    │  ┌─────────────────────────────────┐ │             │
+                    │  │  SPARK Verified Implementation  │ │             │
+                    │  │  - State machine (proven)       │ │             │
+                    │  │  - Layout engine (proven)       │ │             │
+                    │  │  - Event dispatch (proven)      │ │             │
+                    │  └─────────────────────────────────┘ │             │
+                    └─────────────────────────┬────────────┘             │
+                                              │ implements               │
+                    ┌─────────────────────────┼─────────────────────────┐│
+                    │         Layer 3: ZIG FFI BRIDGE                   ││
+                    │  ┌─────────────────────────────────────────────┐  ││
+                    │  │  Pure bridge -- NO business logic           │  ││
+                    │  │  - C ABI exports for Rust consumers    ◄────┼──┘│
+                    │  │  - Lifetime management for non-Ada callers │    │
+                    │  │  - Type marshalling, string interop        │    │
+                    │  └──────────────────────┬──────────────────────┘   │
+                    └─────────────────────────┼─────────────────────────┘
+                                              │ conforms to
+                    ┌─────────────────────────┼─────────────────────────┐
+                    │       Layer 2: GENERATED C HEADERS                │
+                    │  ┌──────────────────────┴──────────────────────┐  │
+                    │  │  Auto-generated from Idris2 ABI specs      │  │
+                    │  │  - Struct layouts, function signatures      │  │
+                    │  │  - Platform-specific ABI variants           │  │
+                    │  └──────────────────────┬──────────────────────┘  │
+                    └─────────────────────────┼─────────────────────────┘
+                                              │ generated from
+                    ┌─────────────────────────┼─────────────────────────┐
+                    │       Layer 1: IDRIS2 ABI SPECIFICATION          │
+                    │  ┌──────────────────────┴──────────────────────┐  │
+                    │  │  Dependent types prove interface correctness│  │
+                    │  │  - Memory layout proofs                     │  │
+                    │  │  - Backward compatibility guarantees        │  │
+                    │  │  - Platform ABI selection at compile time   │  │
+                    │  └─────────────────────────────────────────────┘  │
+                    └───────────────────────────────────────────────────┘
 ----
 
-== Why This Architecture?
+== Why Each Language
 
-* **Rust**: Safe systems programming for the core logic, excellent async support
-* **Zig**: Clean FFI without C toolchain overhead, comptime for zero-cost abstractions
-* **Ada/SPARK**: Formal verification for safety-critical TUI code, strong typing
+[cols="1,2,3"]
+|===
+| Language | Role | Justification
 
-== Components
+| **Idris2**
+| ABI specification
+| Dependent types prove interface correctness at compile time. Memory layouts
+  are verified, backward compatibility is guaranteed by type-level constraints,
+  and platform-specific ABIs are selected via compile-time evidence.
 
-=== Rust Core (`rust/`)
+| **Zig**
+| FFI bridge (pure)
+| Native C ABI compatibility with zero runtime overhead. Cross-compilation is
+  built in. Comptime enables zero-cost type marshalling. No hidden allocator,
+  no runtime dependencies. The bridge contains _no business logic_ -- it only
+  translates types and manages lifetimes for non-Ada callers.
 
-The state management and business logic layer.
+| **SPARK**
+| Verified core implementation
+| Proves absence of runtime errors, memory safety, and state machine
+  correctness. Pre/Post contracts enforce invariants that complement
+  the Idris2 ABI proofs. SPARK's flow analysis guarantees data
+  dependencies are explicit.
 
-[source,rust]
-----
-// Core types exported via Zig FFI
-pub struct TuiState { ... }
-pub struct Widget { ... }
-pub struct Event { ... }
-----
+| **Ada**
+| TUI presentation layer
+| Native SPARK consumer -- Ada code calls SPARK packages directly without
+  FFI overhead. Strong typing and tasking support suit terminal I/O. The
+  Ada layer handles rendering, input, and the main event loop.
 
-=== Zig Bridge (`zig/`)
+| **Rust**
+| Ecosystem consumer
+| Provides async runtime integration (tokio/smol), crate ecosystem access,
+  and a familiar API for Rust developers. Calls into the SPARK core via the
+  Zig bridge's C ABI exports. `#![no_std]` + `#![forbid(unsafe_code)]` in
+  the Rust layer itself.
+|===
 
-FFI layer converting between Rust and Ada types.
-
-[source,zig]
-----
-// Exports C ABI for Ada consumption
-export fn raze_init() callconv(.C) *TuiState { ... }
-export fn raze_render(state: *TuiState) callconv(.C) void { ... }
-----
-
-=== Ada/SPARK TUI (`ada/`)
-
-The presentation layer with optional SPARK contracts.
-
-[source,ada]
-----
--- Main TUI package
-package Raze.Tui is
-   procedure Initialize;
-   procedure Run_Loop;
-   procedure Shutdown;
-end Raze.Tui;
-----
-
-== Building
+== Quick Start
 
 === Prerequisites
 
 * Rust 1.75+ (stable)
 * Zig 0.13+
-* GNAT (GCC Ada) or Alire
-* Optional: SPARK Pro for formal verification
+* GNAT (GCC Ada) or Alire, with SPARK toolset
+* Idris2 0.7+ (for ABI specification development)
+* https://just.systems[just] task runner
 
-=== Build Commands
+=== Build, Test, Run
 
 [source,bash]
 ----
-# Build Rust core as static library
-cd rust && cargo build --release
+# Clone the repository
+git clone https://github.com/hyperpolymath/raze-tui
+cd raze-tui
 
-# Build Zig bridge (links Rust library)
-cd zig && zig build -Doptimize=ReleaseFast
+# See all available recipes
+just
 
-# Build Ada TUI (links Zig library)
-cd ada && gprbuild -P raze_tui.gpr
+# Build the entire stack (Idris2 ABI -> C headers -> Zig bridge -> SPARK -> Ada -> Rust)
+just build
+
+# Run the test suites (all languages)
+just test
+
+# Run the TUI demo application
+just run
+
+# Verify SPARK proofs
+just prove
+
+# Clean all build artifacts
+just clean
 ----
 
-== Status
+=== Build Order
 
-[cols="1,1,2"]
+The build chain is strictly ordered because each layer depends on the one below it:
+
+. `src/abi/*.idr` -- Idris2 ABI definitions compile and generate C headers
+. `generated/abi/*.h` -- Headers consumed by Zig and Ada
+. `zig/src/bridge.zig` -- Zig bridge compiles against generated headers
+. `ada/src/*.ads` / `ada/src/*.adb` -- SPARK/Ada compiles, links Zig bridge
+. `rust/src/lib.rs` -- Rust consumer compiles, links Zig bridge
+
+== Health Zones
+
+RAZE-TUI uses a _dual proof_ architecture where interface correctness and
+implementation correctness are verified by different proof systems.
+
+=== Zone 1: Interface Health (Idris2)
+
+Idris2 dependent types guarantee:
+
+* **Layout correctness** -- struct sizes and field offsets are proven at compile time
+* **Backward compatibility** -- adding fields cannot break existing consumers (proven by type-level version constraints)
+* **Platform consistency** -- ABI differences between Linux/macOS/Windows are resolved at compile time, not runtime
+
+=== Zone 2: Implementation Health (SPARK)
+
+SPARK flow analysis and contracts guarantee:
+
+* **No runtime errors** -- absence of overflow, division by zero, out-of-bounds access
+* **State machine correctness** -- the TUI lifecycle (init -> running -> shutdown) is a proven state machine
+* **Data flow integrity** -- every output depends only on declared inputs, no hidden global state
+
+=== Zone Correspondence
+
+The two zones meet at the C header boundary. Idris2 proves _what_ the interface
+must look like; SPARK proves _how_ the implementation behaves. The generated C
+headers are the shared contract:
+
+[source]
+----
+Idris2 ABI (proves interface)
+      │
+      ▼
+  C Headers  ◄── shared contract
+      │
+      ▼
+SPARK (proves implementation)
+----
+
+When both zones pass, the system has end-to-end assurance: the interface is
+correct by construction (Idris2) and the implementation is correct by proof
+(SPARK).
+
+== Project Structure
+
+[source]
+----
+raze-tui/
+├── src/abi/                 # Idris2 ABI definitions (Layer 1)
+│   ├── Types.idr            #   Core type specifications
+│   ├── Layout.idr           #   Memory layout proofs
+│   └── Foreign.idr          #   FFI function declarations
+├── generated/abi/           # Auto-generated C headers (Layer 2)
+│   └── raze_abi.h           #   Generated from Idris2
+├── zig/                     # Zig FFI bridge (Layer 3)
+│   ├── build.zig
+│   └── src/bridge.zig       #   Pure bridge, no business logic
+├── ada/                     # SPARK core + Ada presentation (Layer 4-5)
+│   ├── raze_tui.gpr
+│   └── src/
+│       ├── raze.ads         #   Root package, FFI types
+│       ├── raze-tui.ads     #   TUI interface with SPARK contracts
+│       ├── raze-tui.adb     #   Implementation (SPARK proven)
+│       └── raze_tui_main.adb  # Main entry point
+├── rust/                    # Rust consumer (Layer 5)
+│   ├── Cargo.toml
+│   └── src/lib.rs           #   no_std, forbid(unsafe_code)
+├── .machine_readable/       # SCM checkpoint files
+│   ├── .machine_readable/6a2/STATE.a2ml
+│   ├── .machine_readable/6a2/META.a2ml
+│   └── .machine_readable/6a2/ECOSYSTEM.a2ml
+├── Justfile                 # Build automation
+├── ROADMAP.adoc             # Development roadmap
+├── TOPOLOGY.md              # Architecture topology map
+└── docs/architecture/
+    └── ARCHITECTURE.adoc    # Deep architecture document
+----
+
+== Current Status
+
+[cols="2,1,3"]
 |===
 | Component | Status | Notes
 
-| Rust Core
-| ✅ Complete
-| State types, events, widgets, colors, styles with full test coverage
+| Idris2 ABI Specification
+| Planned
+| Phase 1 restructure -- will define types, layouts, and FFI signatures
 
-| Zig Bridge
-| ✅ Complete
-| FFI exports for all core functions, string interop, tests passing
+| Generated C Headers
+| Planned
+| Will be auto-generated from Idris2 ABI
 
-| Ada TUI
-| 🚧 In Progress
-| FFI bindings complete, ncurses integration pending
+| Zig FFI Bridge
+| Complete (v0)
+| C ABI exports, string interop, tests passing. Awaiting Idris2 header conformance.
+
+| SPARK Core
+| In Progress
+| Pre/Post contracts on all public APIs. Full proof pending.
+
+| Ada TUI Presentation
+| In Progress
+| FFI bindings complete. Terminal rendering in development.
+
+| Rust Consumer
+| Complete (v0)
+| `no_std` core types, events, widgets. `forbid(unsafe_code)`.
 |===
 
 == License
 
-PMPL-1.0-or-later
+PMPL-1.0-or-later (Palimpsest License)
+
+== Author
+
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 
 == Related Projects
 
-* https://github.com/DutchGhost/zigiffy[zigiffy] - Rust-Zig FFI patterns
-* https://github.com/annexi-strayline/Curses[ANNEXI-STRAYLINE Curses] - Ada ncurses binding
-* https://ratatui.rs[Ratatui] - Rust TUI framework (reference)
+* https://ratatui.rs[Ratatui] -- Rust TUI framework (reference design)
+* https://github.com/annexi-strayline/Curses[ANNEXI-STRAYLINE Curses] -- Ada ncurses binding
+* https://github.com/DutchGhost/zigiffy[zigiffy] -- Rust-Zig FFI patterns
 
-
-See link:TOPOLOGY.md[TOPOLOGY.md] for a visual architecture map and completion dashboard.
+See link:TOPOLOGY.md[TOPOLOGY.md] for visual architecture map and completion dashboard. +
+See link:ROADMAP.adoc[ROADMAP.adoc] for development phases and milestones. +
+See link:docs/architecture/ARCHITECTURE.adoc[ARCHITECTURE.adoc] for deep architecture documentation.

@@ -1,0 +1,534 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+= RAZE-TUI Architecture
+:author: Jonathan D.A. Jewell
+:toc:
+:toc-placement!:
+:icons: font
+:source-highlighter: rouge
+
+Deep architecture document for RAZE-TUI. This covers the design rationale
+behind the five-layer stack, the dual proof system, memory ownership, contract
+correspondence, the event model, and widget tree ownership.
+
+toc::[]
+
+== The Shared SPARK Design
+
+RAZE-TUI has two categories of consumer: Ada code and non-Ada code (Rust).
+These consumers access the SPARK core through different paths, but share the
+same verified implementation.
+
+=== Ada: Direct Access
+
+Ada code calls SPARK packages directly. No FFI boundary, no marshalling, no
+overhead. The Ada presentation layer (`raze_tui_main.adb`) imports
+`Raze.Tui` and calls its subprograms as ordinary Ada procedure/function calls.
+
+[source,ada]
+----
+-- Ada consumer: direct SPARK access, zero overhead
+with Raze.Tui;
+
+procedure Main is
+begin
+   Raze.Tui.Initialize;
+
+   while Raze.Tui.Is_Running loop
+      declare
+         Ev : constant Raze.Event := Raze.Tui.Poll_Event;
+      begin
+         -- Handle event directly in Ada
+         case Ev.Kind is
+            when Raze.Event_Quit => Raze.Tui.Request_Quit;
+            when others => null;
+         end case;
+      end;
+   end loop;
+
+   Raze.Tui.Shutdown;
+end Main;
+----
+
+SPARK contracts on `Raze.Tui` are checked at proof time. The Ada consumer
+benefits from the proofs without runtime cost.
+
+=== Rust: Access via Zig Bridge
+
+Rust code cannot call Ada/SPARK directly. Instead, the Zig bridge exports a
+C ABI that wraps the SPARK core. Rust calls these C functions through standard
+`extern "C"` FFI.
+
+[source]
+----
+Rust consumer
+     │
+     │  extern "C" call
+     ▼
+Zig bridge (C ABI exports)
+     │
+     │  calls SPARK-proven subprograms
+     ▼
+SPARK core (same implementation Ada uses)
+----
+
+The Zig bridge adds _no business logic_. It translates types between C
+representations and SPARK types, and manages object lifetimes for callers
+that do not have Ada's controlled type finalization.
+
+=== Why This Asymmetry
+
+The asymmetry is intentional:
+
+* **Ada gets maximum performance** -- no FFI overhead for the primary TUI
+  consumer. SPARK proofs apply directly to Ada calling code.
+* **Rust gets ecosystem access** -- Rust developers use familiar patterns
+  (traits, async, crates) while the verified core handles correctness.
+* **Zig stays thin** -- the bridge is small enough to audit by hand. Its
+  correctness depends on type layout (proven by Idris2) and calling
+  convention (enforced by Zig's `callconv(.C)`).
+
+== Complementary Proof Systems
+
+Idris2 and SPARK verify different properties using different techniques. They
+are not redundant -- they are complementary.
+
+=== Idris2: Proves the Interface
+
+Idris2's dependent type system proves properties about the _shape_ of the
+interface:
+
+[cols="1,3"]
+|===
+| Property | How Idris2 Proves It
+
+| **Struct layout**
+| Dependent types encode field sizes and offsets. A struct definition in Idris2
+  carries a compile-time proof that `sizeof(TuiState) == 16` on LP64 platforms.
+
+| **Backward compatibility**
+| Version-indexed types ensure that `TuiState_v2` is a strict extension of
+  `TuiState_v1`. Adding a field is permitted; removing or reordering is a
+  type error.
+
+| **Platform ABI selection**
+| Platform evidence (a value of type `Platform`) selects the correct struct
+  layout at compile time. There is no runtime dispatch.
+
+| **Function signature agreement**
+| FFI function declarations in Idris2 carry types that constrain both the
+  caller and the implementer. If Zig's export signature does not match, the
+  generated C header will not compile against it.
+|===
+
+=== SPARK: Proves the Implementation
+
+SPARK's contract-based verification proves properties about _runtime behavior_:
+
+[cols="1,3"]
+|===
+| Property | How SPARK Proves It
+
+| **No runtime errors**
+| SPARK flow analysis combined with `gnatprove` verifies absence of overflow,
+  division by zero, out-of-bounds array access, and null dereference.
+
+| **State machine correctness**
+| Pre/Post contracts on `Initialize`, `Shutdown`, `Is_Running` encode the
+  TUI lifecycle as a state machine. SPARK proves that no transition violates
+  the machine.
+
+| **Data flow integrity**
+| `Global` and `Depends` contracts declare which global state each subprogram
+  reads and writes. SPARK verifies that no hidden data flows exist.
+
+| **Loop termination**
+| Loop variants prove that every loop terminates. Combined with loop
+  invariants, this proves that the layout engine always completes.
+|===
+
+=== Why Two Proof Systems
+
+A single proof system cannot cover both layers efficiently:
+
+* Idris2 excels at _structural_ properties (types, layouts, compatibility)
+  but cannot reason about imperative code with mutable state.
+* SPARK excels at _behavioral_ properties (contracts, flows, absence of errors)
+  but its type system cannot express dependent types or compile-time layout proofs.
+
+Together, they provide end-to-end assurance: the interface is correct by
+construction (Idris2), and the implementation is correct by proof (SPARK).
+
+== Memory Model
+
+Memory ownership in RAZE-TUI follows a strict discipline. Each language layer
+owns specific resources, and ownership never crosses boundaries informally.
+
+=== SPARK Manages State
+
+The canonical TUI state lives in SPARK packages. SPARK's controlled types and
+limited visibility ensure that:
+
+* `TuiState` is allocated and freed only by `Initialize` / `Shutdown`
+* Dimension mutations always increment the version counter (proven by Post)
+* The event queue has bounded capacity (proven by type invariant)
+
+[source,ada]
+----
+-- SPARK owns the state. Post contracts guarantee consistency.
+procedure Set_Size (W, H : Dimension)
+  with Pre  => Is_Running,
+       Post => Width = W and Height = H and
+               State_Version = State_Version'Old + 1;
+----
+
+=== Zig Manages Lifetime for Rust
+
+When Rust calls through the Zig bridge, Zig is responsible for lifetime
+management. The current implementation uses a global allocator:
+
+[source,zig]
+----
+// Zig allocates on init, frees on shutdown.
+// The pointer is opaque to Rust -- Rust never frees it.
+export fn raze_init() callconv(.C) ?*TuiState { ... }
+export fn raze_shutdown() callconv(.C) void { ... }
+----
+
+As the architecture matures, SPARK will own the actual state object, and Zig
+will hold a pointer to SPARK-managed memory. The invariant remains: Rust never
+allocates or frees TUI state.
+
+=== String Interop
+
+Strings cross the FFI boundary via `StringBuffer`, a Zig-allocated buffer with
+explicit capacity. The caller (Ada or Rust) writes into the buffer; Zig manages
+allocation and deallocation.
+
+[source]
+----
+Ownership flow for strings:
+
+  1. Caller requests buffer:  raze_string_alloc(capacity) -> *StringBuffer
+  2. Caller writes data into buffer.data[0..len]
+  3. SPARK reads buffer through Zig bridge
+  4. Caller frees buffer:     raze_string_free(buf)
+
+  Invariant: the allocator that created the buffer must free it.
+  Zig enforces this because only Zig has the allocator reference.
+----
+
+=== Ownership Summary
+
+[cols="1,2,2"]
+|===
+| Resource | Owner | Rationale
+
+| TUI state (`TuiState`)
+| SPARK (via Zig allocator during Phase 0-1)
+| State consistency proven by SPARK contracts
+
+| Widget tree
+| SPARK
+| Layout proofs require SPARK ownership
+
+| Event queue
+| SPARK
+| Bounded capacity proven by SPARK type invariants
+
+| String buffers
+| Zig allocator
+| Cross-language interop requires explicit lifetime
+
+| Async tasks
+| Rust runtime (tokio/smol)
+| Async is Rust's strength; SPARK is synchronous
+
+| Terminal file descriptor
+| SPARK (Ada-level I/O)
+| Signal handling and raw mode managed by SPARK state machine
+|===
+
+== Contract Correspondence
+
+Idris2 dependent types and SPARK Pre/Post conditions express overlapping but
+non-identical properties. This section maps how they correspond at the C
+header boundary.
+
+=== Type-Level Constraints (Idris2) to Runtime Contracts (SPARK)
+
+[source]
+----
+Idris2 (interface)                    SPARK (implementation)
+─────────────────────                 ──────────────────────────────────
+Dimension : Fin 65536                 type Dimension is new unsigned_short;
+  (proven to fit in u16)                with range 0 .. 65535;
+
+TuiState : Record [                   type Tui_State_Record is record
+  ("width", Dimension),                 Width   : Dimension;
+  ("height", Dimension),                Height  : Dimension;
+  ("running", Bool),                    Running : Boolean;
+  ("version", Nat64)]                   Version : Version_Number;
+  (size_proof : sizeof = 16)          end record
+                                        with Convention => C,
+                                             Size => 128;  -- 16 bytes
+
+raze_init : () -> Maybe (Ptr State)   function Initialize return Boolean
+  (returnNonNull : ...)                 with Post => (if Initialize'Result
+                                                      then Is_Running
+                                                      else not Is_Running);
+----
+
+=== Correspondence Rules
+
+[cols="1,1,2"]
+|===
+| Idris2 Construct | SPARK Construct | Relationship
+
+| `Fin n` (bounded natural)
+| Subtype with range constraint
+| Same range; Idris2 proves at compile time, SPARK proves at verification time
+
+| `sizeof` proof
+| `Size` representation clause
+| Both assert the same byte count; Idris2 is authoritative
+
+| `Maybe (Ptr a)` return
+| `Post =>` on nullable return
+| Idris2 proves the caller handles null; SPARK proves the implementer returns correctly
+
+| Version-indexed record extension
+| No direct equivalent
+| Idris2-only property; SPARK trusts the generated header
+
+| `Global` contract
+| `Global =>` aspect
+| SPARK's `Global` is more expressive (read/write/in-out); Idris2 declares existence only
+
+| `Depends` contract
+| `Depends =>` aspect
+| SPARK-only property; Idris2 cannot express data flow dependencies
+|===
+
+=== The C Header as Shared Contract
+
+The generated C header (`generated/abi/raze_abi.h`) is the meeting point:
+
+[source,c]
+----
+/* Generated from src/abi/Types.idr -- DO NOT EDIT */
+/* Idris2 proof: sizeof(raze_tui_state) == 16 on LP64 */
+
+typedef struct {
+    uint16_t width;
+    uint16_t height;
+    _Bool    running;
+    /* 3 bytes padding (proven by Layout.idr) */
+    uint64_t version;
+} raze_tui_state;
+
+/* Idris2 proof: raze_init returns non-null on success */
+/* SPARK proof: Post => Is_Running after successful init */
+raze_tui_state* raze_init(void);
+----
+
+Both Zig and Ada include this header (Zig via `@cImport`, Ada via
+`Convention => C` with matching record layout). Any disagreement between
+the header and either consumer is a compile error.
+
+== Event Model Architecture
+
+=== Event Lifecycle
+
+Events flow through three stages: production, dispatch, and handling.
+
+[source]
+----
+Stage 1: PRODUCTION (Zig + SPARK)
+  Terminal fd → read() → raw bytes
+  Raw bytes → Input Parser (SPARK) → typed Event
+  Event → Event Queue (SPARK, bounded)
+
+Stage 2: DISPATCH (SPARK)
+  Event Queue → Dispatcher
+  Dispatcher → Focus Manager → identify target widget
+  Dispatcher → Capture phase (root → target)
+  Dispatcher → Bubble phase (target → root)
+
+Stage 3: HANDLING (Ada or Rust)
+  Ada handler: direct procedure call
+  Rust handler: Zig bridge → async channel → Rust future
+----
+
+=== Event Types
+
+All events are represented as a flat C-compatible struct:
+
+[source,ada]
+----
+type Event is record
+   Kind      : Event_Kind;    -- None, Key, Mouse, Resize, Quit
+   Key_Code  : unsigned;      -- Unicode codepoint or special key
+   Mods      : Modifiers;     -- Shift, Ctrl, Alt bitmask
+   Mouse_X   : Dimension;     -- Column (mouse events only)
+   Mouse_Y   : Dimension;     -- Row (mouse events only)
+end record
+  with Convention => C;
+----
+
+The flat struct avoids unions and tagged variants at the FFI boundary. The
+`Kind` field discriminates the event type. Unused fields are zeroed (proven
+by SPARK Post conditions on the input parser).
+
+=== Focus Model
+
+Focus is a property of the widget tree, not of individual widgets. The focus
+chain is derived from tree traversal order:
+
+. Pre-order traversal of the widget tree produces a focus list
+. `Tab` advances focus forward; `Shift+Tab` advances backward
+. Only widgets marked `focusable` appear in the chain
+. The focused widget receives key events first (capture phase is optional)
+
+SPARK proves that the focus chain is always non-empty when the widget tree is
+non-empty, and that advancing focus wraps correctly at boundaries.
+
+== Widget Tree Ownership Model
+
+=== Immutable Tree, Mutable State
+
+RAZE-TUI separates the widget tree (immutable, rebuilt on state change) from
+application state (mutable, owned by the consumer).
+
+[source]
+----
+Application State (Rust or Ada)
+       │
+       │  on state change
+       ▼
+Widget Tree Builder
+       │
+       │  produces
+       ▼
+Widget Tree (immutable)     ◄── SPARK owns this
+       │
+       │  diff against previous tree
+       ▼
+Update Commands             ◄── minimal cell mutations
+       │
+       │  apply to
+       ▼
+Cell Buffer (double-buffered)  ◄── SPARK owns this
+       │
+       │  flush dirty regions
+       ▼
+Terminal Output
+----
+
+This model is inspired by Elm and React, adapted for a formally verified
+context. The widget tree is rebuilt from scratch on every state change, but
+the diff algorithm ensures only changed cells are redrawn.
+
+=== Widget Tree Nodes
+
+Each node in the widget tree is a SPARK record:
+
+[source,ada]
+----
+type Widget_Node is record
+   Kind       : Widget_Kind;        -- Box, Text, Input, List, Table, Tabs
+   Bounds     : Rect;               -- Computed by layout engine
+   Style      : Style;              -- Foreground, background, attributes
+   Focusable  : Boolean;            -- Participates in focus chain
+   Children   : Widget_Node_Array;  -- Subtree (for containers)
+   Content    : Content_Ref;        -- Text content or item list
+end record;
+----
+
+SPARK proves:
+
+* `Bounds` is within the parent's `Bounds` (no overflow)
+* `Children` array length is bounded (configurable per widget kind)
+* `Content_Ref` is valid when accessed (no dangling references)
+
+=== Diff Algorithm
+
+The diff algorithm compares two widget trees and produces a list of cell
+mutations:
+
+. Compare nodes pairwise by position in tree
+. If `Kind` differs: full repaint of subtree
+. If `Kind` matches but `Content` or `Style` differs: repaint this node
+. If `Bounds` changed: relayout subtree, then repaint changed cells
+. Unchanged subtrees are skipped entirely
+
+SPARK proves that the diff output is equivalent to a full repaint -- that is,
+applying the diff to the old buffer produces the same result as rendering the
+new tree from scratch. This is the key correctness property.
+
+=== Tree Ownership Rules
+
+[cols="1,2"]
+|===
+| Component | Owner
+
+| Widget tree structure
+| SPARK. Rebuilt on each frame by the layout engine.
+
+| Widget content (text strings, list items)
+| Consumer (Rust or Ada). Passed to tree builder as immutable references.
+
+| Computed layout (Bounds on each node)
+| SPARK layout engine. Written during layout pass, read during render pass.
+
+| Cell buffer
+| SPARK renderer. Double-buffered. Only the renderer writes to it.
+
+| Focus state (which node is focused)
+| SPARK focus manager. Updated by event dispatch.
+|===
+
+The consumer never writes to the widget tree or cell buffer directly. All
+mutations go through the state -> rebuild -> diff -> render pipeline, ensuring
+that SPARK proofs cover every path to the terminal.
+
+== Future Architectural Considerations
+
+=== PanLL Integration
+
+When PanLL panel rendering is added (Phase 5), the widget tree gains a new
+node kind: `Panel`. A `Panel` node holds a reference to a PanLL panel
+manifest and delegates rendering to the panel's own widget subtree. The
+SPARK proof obligations extend to panel bounds but not panel content (which
+is external).
+
+=== Multi-Terminal Sessions
+
+The session manager (Phase 7) introduces a second state machine layered above
+the TUI lifecycle:
+
+[source]
+----
+Session states:     Created -> Attached -> Detached -> Destroyed
+TUI states:         Uninitialized -> Running -> Shutdown
+
+Session.Attached contains a TUI in Running state.
+Session.Detached preserves TUI state without terminal I/O.
+----
+
+SPARK proves that detaching a session does not lose state, and that
+reattaching restores the exact terminal output (by replaying the cell buffer).
+
+=== Accessibility Layer
+
+The accessibility layer (Phase 6) is a _read-only observer_ of the widget
+tree. It does not modify the tree or the cell buffer. Instead, it traverses
+the tree to produce:
+
+* A linear reading order (for screen readers)
+* Role annotations (heading, button, input, etc.)
+* Live region change notifications
+
+Because it is read-only, it does not add proof obligations to the core. Its
+own correctness (complete traversal, correct role mapping) is proven
+separately.

@@ -1,84 +1,71 @@
-## Machine-Readable Artefacts
+# CLAUDE.md — RAZE-TUI Project Instructions
 
-The following files in `.machine_readable/` contain structured project metadata:
+## READ FIRST
 
-- `STATE.scm` - Current project state and progress
-- `META.scm` - Architecture decisions and development practices
-- `ECOSYSTEM.scm` - Position in the ecosystem and related projects
-- `AGENTIC.scm` - AI agent interaction patterns
-- `NEUROSYM.scm` - Neurosymbolic integration config
-- `PLAYBOOK.scm` - Operational runbook
+1. Read `0-AI-MANIFEST.a2ml` — canonical file locations
+2. Read `.machine_readable/6a2/STATE.a2ml` — current position, TSDM categories, what's done/next
+3. Follow TSDM: **must** items first, then should, then could
 
----
+## Architecture (5-layer, 5-language)
 
-# CLAUDE.md - AI Assistant Instructions
+```
+Idris2 ABI (src/interface/abi/)     — proves interface correctness
+    ↓ generates C headers
+Zig FFI (src/interface/ffi/)        — PURE pass-through, ZERO logic
+    ↓ C ABI
+SPARK core (src/spark/)             — proves implementation correctness
+    ├── Ada (src/ada/)              — direct `with` (SPARK is Ada)
+    └── Rust (src/rust/)            — extern "C" via Zig bridge
+```
 
-## Language Policy (Hyperpolymath Standard)
+## Critical Rules for This Repo
 
-### ALLOWED Languages & Tools
+- **Zig bridge = ZERO logic.** No state, no allocation, no conditionals. Only `extern fn` forwarding.
+- **Rust = `#![forbid(unsafe_code)]`**. Never add unsafe blocks.
+- **SPARK = `with SPARK_Mode`** on all packages. Pre/Post on every subprogram.
+- **Idris2 = `%default total`**. No `believe_me`, `assert_total`, `sorry`.
+- **SPDX headers** on every file, every language.
+- **Run `panic-attack assail`** before every commit.
+- **Check proven repo** for formally verified alternatives before writing new code.
 
-| Language/Tool | Use Case | Notes |
-|---------------|----------|-------|
-| **ReScript** | Primary application code | Compiles to JS, type-safe |
-| **Deno** | Runtime & package management | Replaces Node/npm/bun |
-| **Rust** | Performance-critical, systems, WASM | Preferred for CLI tools |
-| **Tauri 2.0+** | Mobile apps (iOS/Android) | Rust backend + web UI |
-| **Dioxus** | Mobile apps (native UI) | Pure Rust, React-like |
-| **Gleam** | Backend services | Runs on BEAM or compiles to JS |
-| **Bash/POSIX Shell** | Scripts, automation | Keep minimal |
-| **JavaScript** | Only where ReScript cannot | MCP protocol glue, Deno APIs |
-| **Python** | SaltStack only | No other Python permitted |
-| **Nickel** | Configuration language | For complex configs |
-| **Guile Scheme** | State/meta files | STATE.scm, META.scm, ECOSYSTEM.scm |
-| **Julia** | Batch scripts, data processing | Per RSR |
-| **OCaml** | AffineScript compiler | Language-specific |
-| **Ada** | Safety-critical systems | Where required |
+## Build Commands
 
-### BANNED - Do Not Use
+```bash
+just build          # Build Zig FFI + link SPARK + Rust
+just check-abi      # Type-check Idris2 ABI
+just prove          # Run GNATprove on SPARK packages
+just test           # Run all tests (Zig + Rust + Ada)
+just run            # Run the TUI demo
+```
 
-| Banned | Replacement |
-|--------|-------------|
-| TypeScript | ReScript |
-| Node.js | Deno |
-| npm | Deno |
-| Bun | Deno |
-| pnpm/yarn | Deno |
-| Go | Rust |
-| Python (general) | ReScript/Rust |
-| Java/Kotlin | Rust/Tauri/Dioxus |
-| Swift | Tauri/Dioxus |
-| React Native | Tauri/Dioxus |
-| Flutter/Dart | Tauri/Dioxus |
+## Language Roles
 
-### Mobile Development
+| Language | Role | Location | Editable? |
+|----------|------|----------|-----------|
+| Idris2 | ABI proofs | `src/interface/abi/` | Yes |
+| Zig | Pure FFI bridge | `src/interface/ffi/` | Bridge only |
+| SPARK | Verified core | `src/spark/` | Yes |
+| Ada | Presentation | `src/ada/` | Yes |
+| Rust | Consumer | `src/rust/` | Yes |
 
-**No exceptions for Kotlin/Swift** - use Rust-first approach:
+## Next Session TODO (STANDING)
 
-1. **Tauri 2.0+** - Web UI (ReScript) + Rust backend, MIT/Apache-2.0
-2. **Dioxus** - Pure Rust native UI, MIT/Apache-2.0
+1. **RSR compliance audit** — run `just validate-rsr`, fix any gaps
+2. **panic-attack assail** — run and address findings
+3. **proven swap-outs** — check if proven repo has verified alternatives for any SPARK packages
+4. **SPARK proofs** — discharge GNATprove obligations on all SPARK packages
+5. **Terminal backend** — implement ANSI rendering and raw mode in SPARK
+6. **Contractiles** — fill in must/trust/dust/intend files with real checks
+7. **Update STATE.a2ml** — adjust completion percentage after work
 
-Both are FOSS with independent governance (no Big Tech).
+## Banned Patterns
 
-### Enforcement Rules
-
-1. **No new TypeScript files** - Convert existing TS to ReScript
-2. **No package.json for runtime deps** - Use deno.json imports
-3. **No node_modules in production** - Deno caches deps automatically
-4. **No Go code** - Use Rust instead
-5. **Python only for SaltStack** - All other Python must be rewritten
-6. **No Kotlin/Swift for mobile** - Use Tauri 2.0+ or Dioxus
-
-### Package Management
-
-- **Primary**: Guix (guix.scm)
-- **Fallback**: Nix (flake.nix)
-- **JS deps**: Deno (deno.json imports)
-
-### Security Requirements
-
-- No MD5/SHA1 for security (use SHA256+)
-- HTTPS only (no HTTP URLs)
-- No hardcoded secrets
-- SHA-pinned dependencies
-- SPDX license headers on all files
-
+| Pattern | Language | Why |
+|---------|----------|-----|
+| `believe_me` | Idris2 | Unsound — bypasses type checker |
+| `assert_total` | Idris2 | Unsound — hides non-termination |
+| `sorry` | Idris2/Lean | Unsound — admits unproven goals |
+| `unsafe` | Rust | Forbidden by `#![forbid(unsafe_code)]` |
+| `unsafeCoerce` | Haskell | Unsound — bypasses types |
+| `Obj.magic` | OCaml | Unsound — bypasses types |
+| `pragma Suppress` | Ada | Disables runtime checks — defeats SPARK |

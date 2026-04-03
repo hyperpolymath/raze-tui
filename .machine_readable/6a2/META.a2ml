@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# META.a2ml — Architecture decisions and development practices
+# Updated: 2026-03-16
+
+[metadata]
+project = "raze-tui"
+author = "Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"
+license = "PMPL-1.0-or-later"
+standard = "RSR 2026"
+
+[architecture-decisions]
+
+[architecture-decisions.adr-001]
+title = "Idris2 ABI + SPARK implementation + Zig FFI architecture"
+status = "accepted"
+date = "2026-03-16"
+rationale = """
+Idris2 dependent types prove interface correctness (bounded values, valid enums,
+monotonic state versions). SPARK Pre/Post contracts prove implementation
+correctness (no runtime errors, contract fulfillment). Zig provides zero-overhead
+C ABI bridging. These are complementary proof techniques covering different
+correctness properties.
+"""
+
+[architecture-decisions.adr-002]
+title = "SPARK as shared verified core between Ada and Rust"
+status = "accepted"
+date = "2026-03-16"
+rationale = """
+Ada consumes SPARK packages directly (SPARK IS Ada). Rust consumes SPARK via
+pragma Export + Zig FFI bridge. Both get the same verified implementation.
+Single source of truth for state management and event handling.
+"""
+
+[architecture-decisions.adr-003]
+title = "Pure Zig FFI bridge with zero logic"
+status = "accepted"
+date = "2026-03-16"
+rationale = """
+The Zig bridge must be a dumb pass-through: no state, no allocation, no logic.
+This ensures the bridge itself cannot introduce bugs. All logic lives in SPARK
+(verified) or Rust (type-safe). The bridge is thin enough to audit by inspection.
+"""
+
+[development-practices]
+axis-1 = "must > intend > like"
+axis-2 = "corrective > adaptive > perfective"
+axis-3 = "systems > compliance > effects"
+scoping-first = true
+idris-unsound-scan = "believe_me/assert_total"
+audit-focus = "systems in place, documentation explains actual state, safety/security accounted for, observed effects reviewed"
+compliance-focus = "seams/compromises/exception register, bounded exceptions, anti-drift checks"
+effects-evidence = "benchmark execution/results and maintainer status dialogue/review"
+compliance-tooling = "panic-attack"
+effects-tooling = "ecological checking with sustainabot guidance"
+
+[design-rationale]
+why-not-single-language = "No single language provides dependent type proofs (Idris2), runtime contract verification (SPARK), zero-overhead FFI (Zig), and ecosystem breadth (Rust) simultaneously"
+why-spark-not-rust-core = "SPARK's Pre/Post/Contract_Cases are provable by GNATprove; Rust's type system cannot express equivalent runtime contracts without macros or external tools"
+why-idris2-not-spark-for-abi = "Idris2 dependent types can prove things SPARK cannot: type-level bounded naturals, indexed widget trees, protocol state machines with Nat indices"

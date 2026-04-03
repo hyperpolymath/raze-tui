@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Intendfile — Declared intentions for upcoming work
+# Author: Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+@abstract:
+Intend checks validate that declared upcoming work has the necessary
+scaffolding in place. These ensure that planned features have the
+right directory structure, stubs, and specifications before
+implementation begins.
+@end
+
+## Idris2 ABI Layer
+
+### abi-modules-exist
+- description: All three ABI modules present (State, Events, Widgets)
+- run: test -f src/interface/abi/State.idr && test -f src/interface/abi/Events.idr && test -f src/interface/abi/Widgets.idr
+- severity: warning
+
+### abi-total-default
+- description: All ABI modules declare %default total
+- run: "grep -l '%default total' src/interface/abi/*.idr 2>/dev/null | wc -l | grep -qE '^[3-9]'"
+- severity: warning
+
+## SPARK Proof Infrastructure
+
+### proof-dir-exists
+- description: GNATprove proof directory ready
+- run: test -d proof || mkdir -p proof
+- severity: info
+
+### gpr-prove-config
+- description: GPR file has Prove package configured
+- run: grep -q 'package Prove' raze_tui.gpr
+- severity: warning
+
+## Terminal Backend
+
+### terminal-package-exists
+- description: SPARK terminal output package exists
+- run: test -f src/spark/raze-terminal.ads && test -f src/spark/raze-terminal.adb
+- severity: warning
+
+### input-parser-exists
+- description: SPARK input parser package exists
+- run: test -f src/spark/raze-input_parser.ads && test -f src/spark/raze-input_parser.adb
+- severity: warning
+
+### posix-wrapper-exists
+- description: POSIX terminal wrapper exists (non-SPARK)
+- run: test -f src/ada/raze-posix.ads && test -f src/ada/raze-posix.adb
+- severity: warning
+
+## Rust Consumer
+
+### rust-no-std
+- description: Rust consumer declares no_std support
+- run: grep -q 'no_std' src/rust/src/lib.rs
+- severity: info
+
+### rust-forbid-unsafe
+- description: Rust consumer forbids unsafe code
+- run: grep -q 'forbid(unsafe_code)' src/rust/src/lib.rs
+- severity: warning
+
+## CI/CD
+
+### workflows-sha-pinned
+- description: All GitHub Actions are SHA-pinned
+- run: "! grep -rE 'uses:.*@v[0-9]' .github/workflows/ 2>/dev/null | head -1 | grep -q ."
+- severity: warning
