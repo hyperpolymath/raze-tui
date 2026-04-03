@@ -53,11 +53,9 @@ __pycache__/
 /lib/
 /proof/
 
-# Zig (new layout under src/interface/ffi/)
-/zig-cache/
-/zig-out/
-/src/interface/ffi/zig-cache/
-/src/interface/ffi/zig-out/
+# Zig build artifacts (global — matches any depth)
+.zig-cache/
+zig-out/
 
 # Rust (new layout under src/rust/)
 /src/rust/target/
