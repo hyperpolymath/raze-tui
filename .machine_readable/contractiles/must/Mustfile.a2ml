@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Mustfile — Hard invariants that MUST hold at all times
+# Author: Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+@abstract:
+Non-negotiable invariants for RAZE-TUI. Violations are blocking errors
+that prevent merge. These encode the architectural guarantees that the
+5-layer verification pipeline depends on.
+@end
+
+## SPARK Integrity
+
+### spark-mode-on-core
+- description: All packages in src/spark/ have SPARK_Mode => On
+- run: "grep -rL 'SPARK_Mode.*On' src/spark/*.ads src/spark/*.adb 2>/dev/null | grep -v raze-terminal | wc -l | grep -q '^0$'"
+- severity: critical
+
+### no-believe-me
+- description: No believe_me in Idris2 ABI files
+- run: "! grep -r 'believe_me' src/interface/abi/ 2>/dev/null | head -1 | grep -q ."
+- severity: critical
+
+### no-assert-total
+- description: No assert_total in Idris2 ABI files
+- run: "! grep -r 'assert_total' src/interface/abi/ 2>/dev/null | head -1 | grep -q ."
+- severity: critical
+
+### no-sorry
+- description: No sorry in Idris2 ABI files
+- run: "! grep -r 'sorry' src/interface/abi/ 2>/dev/null | head -1 | grep -q ."
+- severity: critical
+
+### no-unsafe-rust
+- description: Rust consumer has forbid(unsafe_code)
+- run: grep -q 'forbid(unsafe_code)' src/rust/src/lib.rs
+- severity: critical
+
+### no-pragma-suppress
+- description: No pragma Suppress in Ada/SPARK code
+- run: "! grep -ri 'pragma Suppress' src/spark/ src/ada/ 2>/dev/null | head -1 | grep -q ."
+- severity: critical
+
+## Bridge Purity
+
+### zig-bridge-zero-logic
+- description: Zig bridge contains no control flow (if/while/for/switch)
+- run: "! grep -E '\\b(if|while|for|switch)\\b' src/interface/ffi/src/bridge.zig 2>/dev/null | grep -v '//' | head -1 | grep -q ."
+- severity: critical
+
+## License
+
+### spdx-headers
+- description: All source files have SPDX-License-Identifier headers
+- run: "! find src/ -name '*.ads' -o -name '*.adb' -o -name '*.idr' -o -name '*.zig' -o -name '*.rs' 2>/dev/null | xargs grep -L 'SPDX-License-Identifier' 2>/dev/null | head -1 | grep -q ."
+- severity: critical
+
+### license-pmpl
+- description: LICENSE file contains PMPL identifier
+- run: grep -q 'PMPL' LICENSE
+- severity: critical

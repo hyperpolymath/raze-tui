@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Dustfile — Hygiene checks and cleanup validation
+# Author: Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+@abstract:
+Dust checks verify that the repository remains clean and well-organised.
+These are non-blocking warnings that should be addressed during routine
+maintenance.
+@end
+
+## Build Artifacts
+
+### no-obj-dir-committed
+- description: No compiled object files in repository
+- run: test ! -d obj || test -z "$(ls -A obj/ 2>/dev/null)"
+- severity: warning
+
+### no-bin-dir-committed
+- description: No compiled binaries in repository
+- run: test ! -d bin || test -z "$(ls -A bin/ 2>/dev/null)"
+- severity: warning
+
+### no-zig-cache
+- description: No Zig cache directories committed
+- run: test ! -d src/interface/ffi/zig-cache
+- severity: warning
+
+## Documentation Freshness
+
+### topology-recent
+- description: TOPOLOGY.md updated within last 30 days
+- run: "find . -name 'TOPOLOGY.md' -mtime -30 | grep -q ."
+- severity: info
+
+### state-recent
+- description: STATE.a2ml updated within last 14 days
+- run: "find .machine_readable/ -name 'STATE.a2ml' -mtime -14 | grep -q ."
+- severity: info
+
+## Code Hygiene
+
+### no-todo-in-spark
+- description: No TODO comments in SPARK core (stubs should be replaced)
+- run: "! grep -r 'TODO' src/spark/ 2>/dev/null | grep -v '.ads:' | head -1 | grep -q ."
+- severity: warning
+
+### no-dead-code
+- description: No commented-out code blocks in SPARK/Ada sources
+- run: "! grep -rE '^\\s*--\\s*(procedure|function|package|begin|end)' src/spark/ src/ada/ 2>/dev/null | head -1 | grep -q ."
+- severity: info
+
+### gitignore-complete
+- description: .gitignore covers build artifacts
+- run: grep -q 'obj/' .gitignore && grep -q 'bin/' .gitignore && grep -q 'zig-cache' .gitignore
+- severity: warning

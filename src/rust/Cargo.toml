@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+[package]
+name = "raze-core"
+version = "0.2.0"
+edition = "2021"
+license = "PMPL-1.0-or-later"
+description = "Rust consumer for RAZE-TUI — calls SPARK core via Zig FFI bridge"
+repository = "https://github.com/hyperpolymath/raze-tui"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+# Minimal — no external dependencies for the core types.
+
+[build-dependencies]
+# Link against the Zig bridge library at build time.
+
+[features]
+default = []
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"

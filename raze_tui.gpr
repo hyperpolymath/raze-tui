@@ -1,0 +1,54 @@
+-- SPDX-License-Identifier: PMPL-1.0-or-later
+-- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
+--
+-- RAZE-TUI Ada/SPARK Project File
+--
+-- Builds the SPARK core, Ada presentation layer, and C ABI exports.
+-- The Zig FFI bridge and Rust consumer are built separately by their
+-- respective build systems (zig build, cargo build).
+
+project Raze_Tui is
+
+   -- Source directories:
+   --   src/spark/  — SPARK-proved core (Raze.State, Events, Widgets, Exports)
+   --   src/ada/    — Ada presentation layer (Raze.Tui, main entry point)
+   for Source_Dirs use ("src/spark", "src/ada");
+   for Object_Dir use "obj";
+   for Exec_Dir use "bin";
+   for Main use ("raze_tui_main.adb");
+
+   type Build_Mode is ("debug", "release", "spark");
+   Mode : Build_Mode := external ("MODE", "debug");
+
+   package Compiler is
+      case Mode is
+         when "debug" =>
+            for Default_Switches ("Ada") use
+              ("-g", "-gnatwa", "-gnata", "-gnat2022");
+         when "release" =>
+            for Default_Switches ("Ada") use
+              ("-O2", "-gnatn", "-gnat2022");
+         when "spark" =>
+            for Default_Switches ("Ada") use
+              ("-g", "-gnatwa", "-gnata", "-gnat2022");
+      end case;
+   end Compiler;
+
+   package Binder is
+      for Default_Switches ("Ada") use ("-Es");
+   end Binder;
+
+   package Linker is
+      -- When building the executable, link against the Zig bridge
+      -- (only needed if the Ada presentation layer calls through FFI;
+      -- in the current architecture Ada calls SPARK directly, so this
+      -- is here for future extensibility).
+      for Default_Switches ("Ada") use ("-lc");
+   end Linker;
+
+   package Prove is
+      for Proof_Dir use "proof";
+      for Proof_Switches ("Ada") use ("--level=2", "--timeout=60");
+   end Prove;
+
+end Raze_Tui;

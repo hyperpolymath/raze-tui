@@ -1,173 +1,287 @@
-// SPDX-License-Identifier: MPL-2.0-or-later
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 = RAZE-TUI Roadmap
+:author: Jonathan D.A. Jewell
+:toc:
+:toc-placement!:
+:icons: font
 
-This roadmap outlines the development plan for RAZE-TUI, a polyglot TUI framework using Rust, Zig, and Ada/SPARK.
+Development roadmap for RAZE-TUI, a polyglot TUI framework with dual formal
+verification (Idris2 ABI proofs + SPARK implementation proofs).
 
-== Current Status (v0.1.0-dev)
+toc::[]
+
+== Design Principles
+
+These principles guide every phase:
+
+. **Proof before code** -- Idris2 ABI specs and SPARK contracts are written
+  _before_ implementation. The types define the program.
+. **Zig is a pure bridge** -- The Zig layer contains zero business logic. It
+  translates types and manages lifetimes. Nothing else.
+. **SPARK is the core** -- All state management, layout computation, and event
+  dispatch live in SPARK-proven Ada. This is where correctness matters most.
+. **Rust is a consumer, not the core** -- Rust provides ecosystem integration
+  and async support. It does not own state.
+. **No runtime errors by construction** -- Between Idris2 (interface) and SPARK
+  (implementation), the goal is zero classes of runtime error in the TUI core.
+
+== Non-Goals
+
+* **Not a Ratatui clone** -- RAZE-TUI has a fundamentally different architecture
+  (SPARK core vs Rust core). API similarity is incidental, not a goal.
+* **Not a general-purpose widget toolkit** -- Focus is on TUI. No GUI backend.
+* **Not cross-compiled to WASM** -- Terminal I/O does not translate to browser.
+  A future web terminal emulator could consume the widget tree, but that is
+  post-1.0.
+* **Not dynamically extensible** -- Widgets are compiled in. Plugin systems add
+  attack surface incompatible with formal verification.
+
+== Phase 0: Initial Polyglot Scaffolding [DONE]
+
+*Milestone: v0.0.1-dev*
 
 === Completed
 
-- [x] **Rust Core** - Complete state management and type system
-  - TuiState with dimensions, running flag, version tracking
-  - Event system (Key, Mouse, Resize, Quit events)
-  - Widget type enumeration (Label, Input, Button, Panel, List)
-  - Color system (default, ANSI 256, RGB modes)
-  - Style system (foreground, background, bold, italic, underline)
-  - Rect for layout calculations
-  - Full test coverage
-  - `#![no_std]` + `#![forbid(unsafe_code)]` for safety
+* [x] Repository scaffolding with RSR template (17 CI workflows)
+* [x] Rust core crate (`no_std`, `forbid(unsafe_code)`)
+** Core types: `TuiState`, `Event`, `EventKind`, `WidgetKind`
+** All types `#[repr(C)]` for ABI stability
+* [x] Zig FFI bridge with C ABI exports
+** State lifecycle: `raze_init`, `raze_shutdown`, `raze_is_running`
+** Dimension management, event polling, string interop
+** Unit tests passing
+* [x] Ada/SPARK TUI package
+** FFI bindings to all Zig exports
+** SPARK contract annotations (Pre/Post conditions)
+** Type-safe wrappers for dimensions, events, versions
+* [x] CI/CD pipeline (GitHub Actions, GitLab/Bitbucket mirroring)
+* [x] Security governance (SECURITY.md, provenance, SPDX headers)
 
-- [x] **Zig Bridge** - FFI layer complete
-  - All core FFI exports with C ABI
-  - State lifecycle (init, shutdown, is_running)
-  - Dimension management (get/set width/height)
-  - Event polling infrastructure
-  - String buffer interop for Ada
-  - Version tracking for change detection
-  - Unit tests passing
+== Phase 1: Idris2 ABI + SPARK Core + Zig FFI Restructure [CURRENT]
 
-- [x] **Ada TUI** - FFI bindings complete
-  - All C function imports
-  - Ada wrapper procedures/functions
-  - SPARK contract annotations (Pre/Post conditions)
-  - Type-safe dimension and version handling
+*Milestone: v0.1.0 -- "Verified Foundation"*
 
-- [x] **CI/CD Pipeline**
-  - GitHub Actions workflow for all three languages
-  - Pinned action versions (SHA hashes) for supply chain security
-  - Multi-stage build (Rust -> Zig -> Ada)
-  - GitLab/Bitbucket mirroring
+=== 1.1 Idris2 ABI Specification
 
-- [x] **Security & Governance**
-  - Comprehensive SECURITY.md policy
-  - Provenance tracking (.well-known/provenance.json)
-  - Dual license (MIT OR PMPL-1.0-or-later)
-  - AI training consent requirements
+* [ ] Create `src/abi/Types.idr` -- dependent type definitions for all shared types
+* [ ] Create `src/abi/Layout.idr` -- memory layout proofs (struct sizes, field offsets)
+* [ ] Create `src/abi/Foreign.idr` -- FFI function signature declarations
+* [ ] Prove backward compatibility: adding a field cannot break existing callers
+* [ ] Platform-specific ABI selection (LP64, LLP64, ILP32) via compile-time evidence
+* [ ] C header generation from Idris2 specs to `generated/abi/raze_abi.h`
 
----
+=== 1.2 SPARK Core Migration
 
-== Phase 1: Terminal Backend
+* [ ] Move state management from Zig into SPARK packages
+* [ ] SPARK state machine for TUI lifecycle (`Uninitialized -> Running -> Shutdown`)
+* [ ] Prove absence of runtime errors in state transitions
+* [ ] SPARK flow analysis on all public package interfaces
+* [ ] Data flow contracts: every output depends only on declared inputs
 
-=== 1.1 Terminal Detection & Initialization
-- [ ] Detect terminal capabilities (colors, Unicode support)
-- [ ] Raw mode handling in Zig
-- [ ] Alternate screen buffer support
-- [ ] Signal handling (SIGWINCH for resize, SIGINT/SIGTERM)
+=== 1.3 Zig Bridge Refactor
 
-=== 1.2 Input Handling
-- [ ] Keyboard input parsing (standard keys, function keys, modifiers)
-- [ ] Mouse input support (clicks, scroll, movement)
-- [ ] Paste detection (bracketed paste mode)
-- [ ] UTF-8 input handling
+* [ ] Strip business logic from Zig bridge (move to SPARK)
+* [ ] Zig imports generated C headers from Idris2
+* [ ] Bridge becomes pure type marshalling + lifetime management
+* [ ] Rust consumer calls through Zig C ABI to SPARK core
 
-=== 1.3 Output Rendering
-- [ ] ANSI escape sequence generation
-- [ ] Double buffering for flicker-free updates
-- [ ] Dirty region tracking (minimal redraws)
-- [ ] Unicode/grapheme cluster support
+=== 1.4 Contract Correspondence
 
----
+* [ ] Map Idris2 dependent types to SPARK Pre/Post conditions
+* [ ] Document proof coverage in `docs/architecture/ARCHITECTURE.adoc`
+* [ ] Health zone reporting: which properties are proven where
 
-== Phase 2: Widget System
+== Phase 2: Terminal Backend [PLANNED]
 
-=== 2.1 Layout Engine
-- [ ] Flexbox-style layout constraints
-- [ ] Absolute positioning
-- [ ] Percentage-based sizing
-- [ ] Min/max constraints
-- [ ] Margin and padding
+*Milestone: v0.2.0 -- "Terminal Native"*
 
-=== 2.2 Core Widgets
-- [ ] Label (static text, word wrap, alignment)
-- [ ] Input (single-line text input, cursor, selection)
-- [ ] Button (focusable, click handling)
-- [ ] Panel (bordered container, title)
-- [ ] List (scrollable, selectable items)
+=== 2.1 Terminal Detection and Initialization (SPARK)
 
-=== 2.3 Advanced Widgets
-- [ ] Table (columns, sorting, selection)
-- [ ] Tree (expandable nodes)
-- [ ] Tabs (tabbed interface)
-- [ ] Progress bar
-- [ ] Scrollbar
-- [ ] Modal dialogs
+* [ ] Detect terminal capabilities (color depth, Unicode support)
+* [ ] Raw mode entry/exit as SPARK state machine (proven transitions)
+* [ ] Alternate screen buffer management
+* [ ] Signal handling: SIGWINCH (resize), SIGINT/SIGTERM (graceful shutdown)
 
----
+=== 2.2 ANSI Rendering Engine (SPARK)
 
-== Phase 3: Event System
+* [ ] ANSI escape sequence generation with proven correctness
+* [ ] Double buffering: front buffer (displayed) vs back buffer (building)
+* [ ] Dirty region tracking -- only redraw changed cells
+* [ ] Cell model: character + foreground + background + attributes
+* [ ] Unicode grapheme cluster support (width calculation)
 
-=== 3.1 Event Dispatch
-- [ ] Bubble/capture event phases
-- [ ] Focus management
-- [ ] Tab navigation
-- [ ] Event handlers in Ada
+=== 2.3 Input Parsing (SPARK)
 
-=== 3.2 Async Integration
-- [ ] Tokio integration for Rust async
-- [ ] Timer events
-- [ ] Background task spawning
-- [ ] Channel-based communication
+* [ ] Keyboard input: standard keys, function keys, modifier combinations
+* [ ] Mouse input: clicks, scroll, drag, movement (SGR mouse protocol)
+* [ ] Bracketed paste mode detection
+* [ ] UTF-8 multi-byte sequence parsing (proven no partial reads)
+* [ ] Input event queue with bounded capacity (proven no overflow)
 
----
+=== 2.4 Platform Abstraction (Zig)
 
-== Phase 4: SPARK Verification
+* [ ] POSIX terminal ioctl via Zig (thin wrapper, no logic)
+* [ ] Windows Console API support via Zig (future)
+* [ ] terminfo database reading (capability strings)
 
-=== 4.1 Proof Annotations
-- [ ] Preconditions for all public APIs
-- [ ] Postconditions for state changes
-- [ ] Loop invariants where applicable
-- [ ] Data flow contracts
+== Phase 3: Widget System [PLANNED]
 
-=== 4.2 Verification Targets
-- [ ] Prove absence of runtime errors
-- [ ] Prove memory safety properties
-- [ ] Prove state machine correctness
-- [ ] Document proof limitations
+*Milestone: v0.3.0 -- "Widget Tree"*
 
----
+=== 3.1 Layout Engine (SPARK Verified)
 
-== Phase 5: Polish & Release
+* [ ] Constraint-based layout solver with proven termination
+* [ ] Flexbox-style main axis / cross axis distribution
+* [ ] Absolute and relative positioning
+* [ ] Min/max size constraints (proven satisfiable)
+* [ ] Margin, padding, border box model
+* [ ] Layout cache with version-based invalidation
 
-=== 5.1 Documentation
-- [ ] API reference (all three languages)
-- [ ] Architecture guide
-- [ ] Tutorial: Building a simple TUI app
-- [ ] Examples directory
+=== 3.2 Core Widgets (SPARK Verified)
 
-=== 5.2 Testing
-- [ ] Integration tests across FFI boundary
-- [ ] Property-based testing (Rust)
-- [ ] Fuzzing for input parsing
-- [ ] Performance benchmarks
+* [ ] **Box** -- bordered container with title, SPARK-proven bounds
+* [ ] **Text** -- static text with word wrap, alignment, truncation
+* [ ] **Input** -- single-line text input, cursor, selection range
+* [ ] **List** -- scrollable item list with selection tracking
+* [ ] **Table** -- column definitions, sorting, row selection
+* [ ] **Tabs** -- tabbed container with keyboard navigation
 
-=== 5.3 Packaging
-- [ ] Cargo publish (raze-core)
-- [ ] Zig package manager support
-- [ ] Alire package (Ada)
-- [ ] Release binaries
+=== 3.3 Widget Tree Model
 
----
+* [ ] Immutable widget tree (rebuild on state change, like Elm/React)
+* [ ] Diff algorithm: compare previous and current tree, emit minimal updates
+* [ ] Focus chain: automatic tab-order from tree structure
+* [ ] Widget identity for animation and state preservation
 
-== Future Considerations
+== Phase 4: Rust Async Integration [PLANNED]
 
-- **Accessibility**: Screen reader support, high contrast themes
-- **Theming**: User-configurable color schemes
-- **i18n**: Internationalization and RTL support
-- **Alternative backends**: Windows Console API, terminfo
-- **GUI target**: Optional graphical backend using same widget tree
+*Milestone: v0.4.0 -- "Async Bridge"*
 
----
+=== 4.1 Event Loop Bridge
+
+* [ ] Tokio integration: bridge SPARK event dispatch to Rust async tasks
+* [ ] Smol integration: lightweight alternative for smaller binaries
+* [ ] Channel-based communication: Rust async -> SPARK event queue
+* [ ] Timer events via Rust async (debounce, animation frames)
+
+=== 4.2 Rust API Surface
+
+* [ ] Builder pattern for widget construction from Rust
+* [ ] Trait-based rendering: `impl Widget for MyWidget`
+* [ ] State management: Rust owns application state, SPARK owns TUI state
+* [ ] Error handling: SPARK proof failures surface as Rust `Result` types
+
+=== 4.3 Crate Publishing
+
+* [ ] `raze-core` crate on crates.io (types only)
+* [ ] `raze-tui` crate on crates.io (full TUI with bundled SPARK/Zig)
+* [ ] Alire package for Ada consumers
+* [ ] Zig package for Zig package manager
+
+== Phase 5: PanLL Panel Renderer [PLANNED]
+
+*Milestone: v0.5.0 -- "Panel Native"*
+
+=== 5.1 PanLL Integration
+
+* [ ] Parse PanLL panel manifests (`panels/manifest.json`)
+* [ ] Map PanLL panel types to RAZE widget tree nodes
+* [ ] URI resolution for panel content
+* [ ] Health check protocol for panel liveness
+
+=== 5.2 Panel-to-Widget Mapping
+
+* [ ] PanLL `split` -> RAZE `Box` with flex layout
+* [ ] PanLL `text` -> RAZE `Text` widget
+* [ ] PanLL `input` -> RAZE `Input` widget
+* [ ] PanLL `list` -> RAZE `List` widget
+* [ ] PanLL `tabs` -> RAZE `Tabs` widget
+* [ ] Dynamic panel loading from PanLL workspace descriptors
+
+=== 5.3 Workspace Rendering
+
+* [ ] Multi-panel layout from PanLL workspace layer
+* [ ] Panel focus management (which panel receives input)
+* [ ] Panel resize with constraint propagation
+* [ ] Panel status bar integration
+
+== Phase 6: Accessibility [PLANNED]
+
+*Milestone: v0.6.0 -- "Accessible by Default"*
+
+=== 6.1 Screen Reader Support
+
+* [ ] ARIA-like role annotations on all widgets
+* [ ] Cursor routing for screen reader focus tracking
+* [ ] Announcements: live region protocol for status changes
+* [ ] Structured navigation: headings, landmarks, lists
+
+=== 6.2 Visual Accessibility
+
+* [ ] High contrast theme (WCAG AAA contrast ratios)
+* [ ] Large text mode (2x cell rendering)
+* [ ] Reduced motion mode (disable animations)
+* [ ] Color-blind safe palette options (protanopia, deuteranopia, tritanopia)
+
+=== 6.3 Keyboard-Only Navigation
+
+* [ ] Full keyboard operability: every action reachable without mouse
+* [ ] Visible focus indicator on all focusable widgets
+* [ ] Keyboard shortcuts discoverable via help overlay
+* [ ] Spatial navigation (arrow keys move between widgets)
+
+== Phase 7: Multi-Terminal [PLANNED]
+
+*Milestone: v0.7.0 -- "Session Manager"*
+
+=== 7.1 SPARK Session Manager
+
+* [ ] Session state machine (create, attach, detach, destroy) with proofs
+* [ ] Terminal multiplexing: split a single terminal into independent regions
+* [ ] Session persistence: detach and reattach without losing state
+* [ ] Session serialization for crash recovery
+
+=== 7.2 Split Pane Management
+
+* [ ] Horizontal and vertical splits (tmux-like)
+* [ ] Pane resize with keyboard and mouse
+* [ ] Pane zoom (temporarily maximize one pane)
+* [ ] Pane swap and rotate
+
+=== 7.3 Multi-Application Support
+
+* [ ] Run multiple RAZE applications in a single terminal
+* [ ] Inter-application communication via message passing
+* [ ] Shared clipboard between panes
+* [ ] Status line with session/pane indicators
+
+== Milestones Summary
+
+[cols="1,2,1,2"]
+|===
+| Version | Name | Phase | Key Deliverable
+
+| v0.0.1-dev | Scaffolding | 0 | Polyglot build pipeline working
+| v0.1.0 | Verified Foundation | 1 | Idris2 ABI + SPARK core proven
+| v0.2.0 | Terminal Native | 2 | ANSI rendering, raw mode, input
+| v0.3.0 | Widget Tree | 3 | Core widgets with SPARK-proven layout
+| v0.4.0 | Async Bridge | 4 | Rust tokio/smol integration
+| v0.5.0 | Panel Native | 5 | PanLL panel rendering
+| v0.6.0 | Accessible by Default | 6 | Screen reader, high contrast, keyboard-only
+| v0.7.0 | Session Manager | 7 | Multi-terminal, split panes
+| v1.0.0 | Stable | -- | API freeze, full documentation, packaging
+|===
 
 == Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions welcome. See link:CONTRIBUTING.md[CONTRIBUTING.md] for guidelines.
 
-Priority areas:
-1. Terminal backend implementation
-2. Widget implementations
-3. SPARK proof annotations
-4. Documentation and examples
+Priority areas by phase:
 
----
+. *Phase 1*: Idris2 ABI definitions, SPARK proof annotations
+. *Phase 2*: Terminal backend, input parsing
+. *Phase 3*: Widget implementations, layout engine
+. *Phase 4*: Rust API design, async integration
 
-*Last updated: 2025-12-17*
+_Last updated: 2026-03-16_
