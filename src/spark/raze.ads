@@ -12,8 +12,7 @@
 -- Idris2 ABI module structure.
 
 package Raze
-  with SPARK_Mode => On,
-       Pure
+  with SPARK_Mode => On
 is
-   pragma Pure;
+   pragma Preelaborate;
 end Raze;

@@ -98,9 +98,9 @@ is
    Default_Style : constant Style :=
      (FG        => Default_Color,
       BG        => Default_Color,
-      Bold      => Interfaces.C.C_bool (False),
-      Italic    => Interfaces.C.C_bool (False),
-      Underline => Interfaces.C.C_bool (False));
+      Bold      => Interfaces.C.C_bool (Standard.False),
+      Italic    => Interfaces.C.C_bool (Standard.False),
+      Underline => Interfaces.C.C_bool (Standard.False));
 
    ---------------------------------------------------------------------------
    -- Bounding rectangle
