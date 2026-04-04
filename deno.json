@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
+//
+// Deno workspace configuration for raze-tui contract and property tests.
+{
+  "name": "raze-tui",
+  "version": "0.2.0",
+  "tasks": {
+    "test": "deno test tests/ --allow-none",
+    "test:unit": "deno test tests/unit/",
+    "test:property": "deno test tests/property/",
+    "test:e2e": "deno test tests/e2e/",
+    "test:aspect": "deno test tests/aspect/",
+    "test:contract": "deno test tests/contract/",
+    "bench": "deno bench tests/bench/"
+  },
+  "test": {
+    "include": ["tests/**/*_test.ts", "tests/**/*_test.js"]
+  }
+}
