@@ -1,23 +1,143 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = RAZE-TUI — Show Me The Receipts
 :toc:
 :icons: font
+:author: Jonathan D.A. Jewell
 
-The README makes claims. This file backs them up.
+The README makes claims. This file backs them up, traces the critical paths,
+and tells a reviewer exactly where to look.
+
+== Claim 1: Five-Language Verification Pipeline
 
 [quote, README]
 ____
 The two zones meet at the C header boundary. Idris2 proves _what_ the interface
+must be; Zig enforces _that_ the implementation crosses the boundary correctly;
+SPARK proves _how_ the implementation behaves.
 ____
+
+*How it works:*
+RAZE-TUI is a **R**ust-**A**da-**Z**ig **E**mbedded TUI framework structured as
+a five-layer verification pipeline:
+
+**Layer 1 — Idris2 ABI Specification** (`src/interface/abi/`):
+Three Idris2 modules (`State.idr`, `Events.idr`, `Widgets.idr`) define the
+canonical interface using dependent types. `State.idr` proves invariants at the
+type level — for example, `BoundedDimension lo hi n prf` carries a compile-time
+proof that the screen dimension `n` is within `[lo, hi]`. The module also proves
+that the state version is monotonically non-decreasing across mutations, and
+that running-flag transitions are well-ordered (init → running → stopped).
+`%default total` is declared, so all functions must terminate.
+
+**Layer 2 — Generated C Headers** (`src/interface/generated/`):
+C headers are auto-generated from the Idris2 ABI specs. They encode struct
+layouts, function signatures, and platform-specific ABI variants. These are
+the stable contract that Zig and Rust consume.
+
+**Layer 3 — Zig FFI Bridge** (`src/interface/ffi/src/bridge.zig`):
+A pure pass-through bridge with zero logic. The file's own comment states the
+rules explicitly: no state variables, no heap allocation, no control flow beyond
+direct forwarding, no type conversion. Every exported function is a single-line
+delegation to a SPARK `extern "C"` export. The bridge also defines the `RazeEvent`
+C ABI struct (16 bytes total, field offsets pinned to match Idris2 specs).
+
+**Layer 4 — SPARK Core** (`src/spark/`):
+SPARK/Ada implements the verified state machine, layout engine, and event
+dispatch. `src/ada/raze-exports.ads` declares the `pragma Export` surfaces
+that Zig bridges to. `src/ada/raze-tui.ads` provides the high-level Ada
+presentation interface, delegating directly to `Raze.State` and `Raze.Events`
+(Ada and SPARK share the GNAT compiler and calling convention, so no FFI is
+needed between them). Pre/Post contracts are specified on all subprograms.
+
+**Layer 5 — Rust Consumer** (`src/rust/`):
+Rust calls the Zig bridge via `extern "C"` and adds async integration (tokio/smol).
+The crate is `#![forbid(unsafe_code)]` — all unsafe crossing is isolated in
+the Zig bridge layer.
+
+*Honest caveat:*
+The SPARK proofs (GNATprove discharge) are listed as a standing TODO in `CLAUDE.md`
+and `TEST-NEEDS.md`. The Idris2 ABI layer type-checks, and the Zig bridge
+compiles, but the full GNATprove obligation discharge has not been run to
+completion. The terminal backend (ANSI rendering and raw mode in SPARK) is also
+partially implemented.
+
+== Claim 2: Zero-Logic Zig Bridge as ABI Enforcement Point
+
+[quote, README]
+____
+Zig provides a zero-overhead FFI bridge … The two zones meet at the C header
+boundary.
+____
+
+*How it works:*
+`src/interface/ffi/src/bridge.zig` exports the C ABI surface that Rust consumes.
+It imports SPARK exports as `extern "C"` declarations (`spark_raze_init`,
+`spark_raze_shutdown`, `spark_raze_is_running`, `spark_raze_get_width`,
+`spark_raze_poll_event`, etc.) and re-exports them under the same signature.
+The `RazeEvent` extern struct has fixed field offsets documented inline:
+`kind=0`, `key_code=4`, `modifiers=8`, `mouse_x=10`, `mouse_y=12` — these
+match the Idris2 ABI spec in `Events.idr`. Any mismatch between layers causes
+a compile-time ABI error or a CI failure in `just check-abi`.
+
+The Zig `build.zig` at `src/interface/ffi/build.zig` links `libraze_spark.a`
+(the GNAT-compiled SPARK library) and produces `libraze_ffi.a` for Rust to
+link against.
+
+*Honest caveat:*
+`just check-abi` currently type-checks the Idris2 layer only. A round-trip ABI
+conformance test (running the generated C headers against the actual Zig struct
+definitions) is on the backlog in `TEST-NEEDS.md`. Cross-platform ABI variants
+(Windows vs Linux) are specified in Idris2 but the Zig bridge currently only
+targets Linux x86_64.
+
+== Dogfooded Across The Account
+
+[cols="2,3,1"]
+|===
+| Repo / System | How RAZE-TUI is used | Status
+
+| `raze-tui` itself | Reference implementation of the Idris2-ABI + Zig-FFI + SPARK architecture standard | Live
+| `panll` | PanLL panel engine plans to use RAZE-TUI as its terminal backend for SPARK-verified rendering | Planned
+| `gossamer` | Window management system may use RAZE-TUI for the embedded terminal panel | Design stage
+| `rza-tui` pattern | The five-layer architecture is the account standard for any future verified TUI | Standard
+| `hypatia` | Hypatia CI validates that RAZE-TUI's workflow files meet RSR standards | Live (CI)
+|===
 
 == File Map
 
-[cols="1,2"]
+[cols="1,3"]
 |===
 | Path | What's There
 
-| `src/` | Source code
-| `test(s)/` | Test suite
+| `src/interface/abi/State.idr` | **Critical path.** Idris2 dependent-type proofs of state invariants (dimension bounds, version monotonicity, running-flag ordering)
+| `src/interface/abi/Events.idr` | Idris2 ABI spec for event type and C struct layout
+| `src/interface/abi/Widgets.idr` | Idris2 ABI spec for widget tree types
+| `src/interface/ffi/src/bridge.zig` | **Critical path.** Zig pure pass-through bridge; zero logic; all SPARK `extern "C"` imports and re-exports
+| `src/interface/ffi/build.zig` | Zig build script; links `libraze_spark.a`, produces `libraze_ffi.a`
+| `src/interface/generated/` | Auto-generated C headers from Idris2 ABI specs
+| `src/ada/raze-state.ads/adb` | SPARK state machine: `Initialize`, `Shutdown`, `Is_Running`, `Set_Size`, `Get_Version`
+| `src/ada/raze-events.ads/adb` | SPARK event dispatch: `Poll_Event`, event type definitions
+| `src/ada/raze-exports.ads/adb` | `pragma Export` declarations that surface SPARK to C ABI
+| `src/ada/raze-tui.ads/adb` | Ada presentation layer; delegates to SPARK core (no FFI needed)
+| `src/ada/raze-widgets.ads/adb` | Ada widget tree and layout engine
+| `src/ada/raze-terminal.ads/adb` | Terminal backend: ANSI rendering and raw mode (partially implemented)
+| `src/ada/raze-input_parser.ads/adb` | Input event parsing from raw terminal bytes
+| `src/ada/raze-posix.ads/adb` | POSIX system call bindings (ioctl, termios)
+| `src/spark/` | SPARK-only verified packages with Pre/Post contracts and GNATprove obligations
+| `src/rust/` | Rust consumer crate; `#![forbid(unsafe_code)]`; async integration
+| `raze_tui.gpr` | GNAT project file tying Ada/SPARK sources together
+| `lib/` | Compiled library output directory
+| `bin/` | Compiled binary output directory
+| `obj/` | GNAT object files
+| `hooks/` | Git hooks (panic-attack integration)
+| `PROOF-NEEDS.md` | GNATprove obligation discharge backlog
+| `TEST-NEEDS.md` | Testing backlog including ABI round-trip conformance tests
+| `TESTING-REPORT.adoc` | Current test coverage report
+| `Justfile` | Build recipes: `just build`, `just check-abi`, `just prove`, `just test`, `just run`
+| `flake.nix` / `guix.scm` | Reproducible environment (includes GNAT, GNATprove, Idris2, Zig, Rust)
+| `contractiles/` | Contractile trust/dust/intend check files
+| `.machine_readable/6a2/` | A2ML state, meta, ecosystem, agentic, neurosym, playbook manifests
 |===
 
 == Questions?
