@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # STATE.a2ml — Project state checkpoint
 # Updated: 2026-03-20
 
@@ -115,7 +115,7 @@ compliance = [
     "SPDX headers on all files",
     "Author attribution correct",
     "No banned patterns (believe_me, assert_total, sorry, unsafe)",
-    "License PMPL-1.0-or-later throughout"
+    "License MPL-2.0 throughout"
 ]
 effects = [
     "Performance benchmarks for terminal rendering",
