@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
-// Ported via Harvard Engine mechanical processor
+// Ported via Harvard Engine (Semantic pass)
 
 module tui_lifecycle_test;
 
-// TODO: Complete semantic implementation
-
-/* === ORIGINAL TYPESCRIPT CONTEXT ===
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
 //
@@ -16,7 +13,7 @@ module tui_lifecycle_test;
 // the contracts defined in `raze-state.ads` and `raze-events.ads`.
 //
 // This exercises the state machine contract layer (init → running →
-// event-dispatch → shutdown) without invoking any FFI.
+// event-dispatch → shutdown) without invoking unknown FFI.
 
 import {
   assertEquals,
@@ -29,15 +26,15 @@ import {
 // ---------------------------------------------------------------------------
 
 /** TUI lifecycle phases (mirrors SPARK phase transitions). */
-const Phase = {
+let Phase = {
   Uninit: "Uninit",
   Running: "Running",
   Stopped: "Stopped",
 } as const;
 
-type PhaseValue = (typeof Phase)[keyof typeof Phase];
+struct PhaseValue { (typeof Phase)[keyof typeof Phase];
 
-const EventKind = {
+let EventKind = {
   None: 0,
   Key: 1,
   Mouse: 2,
@@ -45,7 +42,7 @@ const EventKind = {
   Quit: 4,
 } as const;
 
-const Modifiers = {
+let Modifiers = {
   NONE: 0,
   SHIFT: 1,
   CTRL: 2,
@@ -53,7 +50,7 @@ const Modifiers = {
 } as const;
 
 /** Simulated TUI event (matches RazeEvent C ABI layout). */
-interface TuiEvent {
+struct TuiEvent {
   kind: number;
   key_code: number;
   modifiers: number;
@@ -62,7 +59,7 @@ interface TuiEvent {
 }
 
 /** Simulated TUI state (mirrors Raze.State internal state). */
-interface TuiState {
+struct TuiState {
   phase: PhaseValue;
   width: number;
   height: number;
@@ -74,7 +71,7 @@ interface TuiState {
  * Simulated TUI system — a pure TypeScript model of the SPARK/Zig/Rust
  * stack, exercising the state machine contracts.
  */
-class TuiSystem {
+struct TuiSystem {
   private state: TuiState = {
     phase: Phase.Uninit,
     width: 80,
@@ -187,19 +184,19 @@ class TuiSystem {
 // Helpers: canonical event constructors
 // ---------------------------------------------------------------------------
 
-function keyEvent(code: number, mods = 0): TuiEvent {
+fn keyEvent(code: number, mods = 0): TuiEvent {
   return { kind: EventKind.Key, key_code: code, modifiers: mods, mouse_x: 0, mouse_y: 0 };
 }
 
-function mouseEvent(x: number, y: number, mods = 0): TuiEvent {
+fn mouseEvent(x: number, y: number, mods = 0): TuiEvent {
   return { kind: EventKind.Mouse, key_code: 0, modifiers: mods, mouse_x: x, mouse_y: y };
 }
 
-function resizeEvent(width: number, height: number): TuiEvent {
+fn resizeEvent(width: number, height: number): TuiEvent {
   return { kind: EventKind.Resize, key_code: 0, modifiers: 0, mouse_x: width, mouse_y: height };
 }
 
-function quitEvent(): TuiEvent {
+fn quitEvent(): TuiEvent {
   return { kind: EventKind.Quit, key_code: 0, modifiers: 0, mouse_x: 0, mouse_y: 0 };
 }
 
@@ -208,20 +205,20 @@ function quitEvent(): TuiEvent {
 // ---------------------------------------------------------------------------
 
 Deno.test("e2e: TUI starts in Uninit phase", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   assertEquals(tui.isInitialized(), false);
   assertEquals(tui.isRunning(), false);
 });
 
 Deno.test("e2e: initialize() transitions Uninit → Running", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   assertEquals(tui.isInitialized(), true);
   assertEquals(tui.isRunning(), true);
 });
 
 Deno.test("e2e: shutdown() transitions Running → Stopped", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.shutdown();
   assertEquals(tui.isInitialized(), false);
@@ -229,14 +226,14 @@ Deno.test("e2e: shutdown() transitions Running → Stopped", () => {
 });
 
 Deno.test("e2e: initial dimensions are 80×24 (VT100 defaults)", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   assertEquals(tui.getWidth(), 80);
   assertEquals(tui.getHeight(), 24);
 });
 
 Deno.test("e2e: initial version is 0", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   assertEquals(tui.getVersion(), 0);
 });
@@ -246,9 +243,9 @@ Deno.test("e2e: initial version is 0", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("e2e: key event dispatched → state unchanged (key handled by consumer)", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
-  const versionBefore = tui.getVersion();
+  let versionBefore = tui.getVersion();
   tui.processEvent(keyEvent(0x61, Modifiers.NONE));
   // Key events do not mutate dimensions or version.
   assertEquals(tui.getVersion(), versionBefore);
@@ -257,7 +254,7 @@ Deno.test("e2e: key event dispatched → state unchanged (key handled by consume
 });
 
 Deno.test("e2e: Ctrl+C key event does not auto-quit (must go through quit event)", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.processEvent(keyEvent(0x63, Modifiers.CTRL));
   // Ctrl+C alone does not quit — must be explicit quit event.
@@ -269,7 +266,7 @@ Deno.test("e2e: Ctrl+C key event does not auto-quit (must go through quit event)
 // ---------------------------------------------------------------------------
 
 Deno.test("e2e: Resize event updates dimensions", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.processEvent(resizeEvent(132, 50));
   assertEquals(tui.getWidth(), 132);
@@ -277,15 +274,15 @@ Deno.test("e2e: Resize event updates dimensions", () => {
 });
 
 Deno.test("e2e: Resize event increments version", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
-  const before = tui.getVersion();
+  let before = tui.getVersion();
   tui.processEvent(resizeEvent(100, 40));
   assertEquals(tui.getVersion(), before + 1);
 });
 
 Deno.test("e2e: multiple resize events increment version monotonically", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.processEvent(resizeEvent(80, 24));
   tui.processEvent(resizeEvent(132, 50));
@@ -298,10 +295,10 @@ Deno.test("e2e: multiple resize events increment version monotonically", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("e2e: push → poll → process key event", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.pushEvent(keyEvent(0x41, Modifiers.NONE));
-  const e = tui.pollEvent();
+  let e = tui.pollEvent();
   assertNotEquals(e, null);
   assertEquals(e!.kind, EventKind.Key);
   assertEquals(e!.key_code, 0x41);
@@ -310,7 +307,7 @@ Deno.test("e2e: push → poll → process key event", () => {
 });
 
 Deno.test("e2e: event queue drains in FIFO order", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.pushEvent(keyEvent(1));
   tui.pushEvent(keyEvent(2));
@@ -322,14 +319,14 @@ Deno.test("e2e: event queue drains in FIFO order", () => {
 });
 
 Deno.test("e2e: Quit event via queue stops the event loop", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.pushEvent(keyEvent(0x61));
   tui.pushEvent(quitEvent());
 
   let processed = 0;
   while (tui.isRunning()) {
-    const e = tui.pollEvent();
+    let e = tui.pollEvent();
     if (!e) break;
     tui.processEvent(e);
     processed++;
@@ -343,14 +340,14 @@ Deno.test("e2e: Quit event via queue stops the event loop", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("e2e: widget focus starts at index 0", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.registerWidgets(3);
   assertEquals(tui.getFocusIndex(), 0);
 });
 
 Deno.test("e2e: Tab cycles focus forward", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.registerWidgets(3);
   tui.focusNext();
@@ -360,7 +357,7 @@ Deno.test("e2e: Tab cycles focus forward", () => {
 });
 
 Deno.test("e2e: Tab wraps from last widget to first", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.registerWidgets(3);
   tui.focusNext();
@@ -370,7 +367,7 @@ Deno.test("e2e: Tab wraps from last widget to first", () => {
 });
 
 Deno.test("e2e: Shift-Tab cycles focus backward", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.registerWidgets(3);
   tui.focusNext(); // 0 → 1
@@ -379,7 +376,7 @@ Deno.test("e2e: Shift-Tab cycles focus backward", () => {
 });
 
 Deno.test("e2e: Shift-Tab wraps from first widget to last", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   tui.registerWidgets(3);
   tui.focusPrev(); // 0 → 2 (wrap)
@@ -387,7 +384,7 @@ Deno.test("e2e: Shift-Tab wraps from first widget to last", () => {
 });
 
 Deno.test("e2e: full init→event-loop→shutdown sequence", () => {
-  const tui = new TuiSystem();
+  let tui = new TuiSystem();
   tui.initialize();
   assert(tui.isInitialized(), "must be initialized");
   assert(tui.isRunning(), "must be running");
@@ -405,4 +402,3 @@ Deno.test("e2e: full init→event-loop→shutdown sequence", () => {
   assertEquals(tui.isInitialized(), false);
 });
 
-==================================== */
