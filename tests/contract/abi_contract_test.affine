@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
+// Ported via Harvard Engine mechanical processor
+
+module abi_contract_test;
+
+// TODO: Complete semantic implementation
+
+/* === ORIGINAL TYPESCRIPT CONTEXT ===
+// SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
 //
 // Contract tests: ABI specification conformance.
@@ -270,3 +278,5 @@ Deno.test("contract: version is monotonically non-decreasing after Set_Size", ()
   setSize(80, 24);
   assert(version >= before + 1, "Version must be strictly greater after second Set_Size");
 });
+
+==================================== */

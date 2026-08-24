@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
+// Ported via Harvard Engine mechanical processor
+
+module tui_lifecycle_test;
+
+// TODO: Complete semantic implementation
+
+/* === ORIGINAL TYPESCRIPT CONTEXT ===
+// SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
 //
 // E2E tests: TUI lifecycle state machine and event dispatch.
@@ -396,3 +404,5 @@ Deno.test("e2e: full init→event-loop→shutdown sequence", () => {
   tui.shutdown();
   assertEquals(tui.isInitialized(), false);
 });
+
+==================================== */

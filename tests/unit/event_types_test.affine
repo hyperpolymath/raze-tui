@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
+// Ported via Harvard Engine mechanical processor
+
+module event_types_test;
+
+// TODO: Complete semantic implementation
+
+/* === ORIGINAL TYPESCRIPT CONTEXT ===
+// SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
 //
 // Unit tests for raze-tui event types and C ABI layout contracts.
@@ -297,3 +305,5 @@ Deno.test("WidgetKind values are mutually distinct", () => {
   const unique = new Set(vals);
   assertEquals(unique.size, vals.length);
 });
+
+==================================== */
