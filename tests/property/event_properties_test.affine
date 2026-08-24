@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
-// Ported via Harvard Engine mechanical processor
+// Ported via Harvard Engine (Semantic pass)
 
 module event_properties_test;
 
-// TODO: Complete semantic implementation
-
-/* === ORIGINAL TYPESCRIPT CONTEXT ===
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
 //
@@ -20,7 +17,7 @@ import { assertEquals, assertGreaterOrEqual, assertLessOrEqual } from "jsr:@std/
 // Shared type definitions (mirror of unit test definitions)
 // ---------------------------------------------------------------------------
 
-const EventKind = {
+let EventKind = {
   None: 0,
   Key: 1,
   Mouse: 2,
@@ -28,7 +25,7 @@ const EventKind = {
   Quit: 4,
 } as const;
 
-const Modifiers = {
+let Modifiers = {
   NONE: 0,
   SHIFT: 1,
   CTRL: 2,
@@ -40,7 +37,7 @@ const Modifiers = {
 // Helper: generate a sequence of sample u32 values spanning the range.
 // ---------------------------------------------------------------------------
 
-function sampleU32(): number[] {
+fn sampleU32(): number[] {
   return [
     0,
     1,
@@ -55,11 +52,11 @@ function sampleU32(): number[] {
   ];
 }
 
-function sampleU16(): number[] {
+fn sampleU16(): number[] {
   return [0, 1, 0x7F, 0xFF, 0x100, 0x1000, 0x7FFF, 0xFFFF];
 }
 
-function sampleU8(): number[] {
+fn sampleU8(): number[] {
   return [0, 1, 2, 4, 7, 8, 0x0F, 0x1F, 0x7F, 0xFF];
 }
 
@@ -75,7 +72,7 @@ Deno.test("property: all defined EventKind values are in [0, 4]", () => {
 });
 
 Deno.test("property: EventKind discriminants are contiguous 0..4", () => {
-  const vals = Object.values(EventKind).sort((a, b) => a - b);
+  let vals = Object.values(EventKind).sort((a, b) => a - b);
   for (let i = 0; i < vals.length; i++) {
     assertEquals(vals[i], i, `Expected discriminant ${i}, got ${vals[i]}`);
   }
@@ -88,23 +85,23 @@ Deno.test("property: EventKind discriminants are contiguous 0..4", () => {
 Deno.test("property: key_code accepts all u32 values without overflow", () => {
   for (const code of sampleU32()) {
     // Simulate storing in a u32 field and reading back.
-    const buf = new ArrayBuffer(4);
-    const view = new DataView(buf);
+    let buf = new ArrayBuffer(4);
+    let view = new DataView(buf);
     view.setUint32(0, code >>> 0, true);
-    const readBack = view.getUint32(0, true);
+    let readBack = view.getUint32(0, true);
     assertEquals(readBack, code >>> 0,
       `key_code ${code.toString(16)} must round-trip through u32`);
   }
 });
 
 Deno.test("property: key_code 0 is always valid", () => {
-  const buf = new ArrayBuffer(4);
+  let buf = new ArrayBuffer(4);
   new DataView(buf).setUint32(0, 0, true);
   assertEquals(new DataView(buf).getUint32(0, true), 0);
 });
 
 Deno.test("property: key_code 0xFFFFFFFF is representable as u32", () => {
-  const buf = new ArrayBuffer(4);
+  let buf = new ArrayBuffer(4);
   new DataView(buf).setUint32(0, 0xFFFF_FFFF >>> 0, true);
   assertEquals(new DataView(buf).getUint32(0, true), 0xFFFF_FFFF >>> 0);
 });
@@ -117,7 +114,7 @@ Deno.test("property: mouse_x accepts all u16 values", () => {
   for (const coord of sampleU16()) {
     assertGreaterOrEqual(coord, 0);
     assertLessOrEqual(coord, 0xFFFF);
-    const buf = new ArrayBuffer(2);
+    let buf = new ArrayBuffer(2);
     new DataView(buf).setUint16(0, coord, true);
     assertEquals(new DataView(buf).getUint16(0, true), coord);
   }
@@ -127,7 +124,7 @@ Deno.test("property: mouse_y accepts all u16 values", () => {
   for (const coord of sampleU16()) {
     assertGreaterOrEqual(coord, 0);
     assertLessOrEqual(coord, 0xFFFF);
-    const buf = new ArrayBuffer(2);
+    let buf = new ArrayBuffer(2);
     new DataView(buf).setUint16(0, coord, true);
     assertEquals(new DataView(buf).getUint16(0, true), coord);
   }
@@ -147,8 +144,8 @@ Deno.test("property: Resize events use mouse_x/mouse_y for width/height", () => 
     [40, 10],
   ];
   for (const [width, height] of testCases) {
-    const buf = new ArrayBuffer(16);
-    const view = new DataView(buf);
+    let buf = new ArrayBuffer(16);
+    let view = new DataView(buf);
     view.setInt32(0, EventKind.Resize, true);
     view.setUint16(10, width, true); // mouse_x = width
     view.setUint16(12, height, true); // mouse_y = height
@@ -162,8 +159,8 @@ Deno.test("property: Resize events use mouse_x/mouse_y for width/height", () => 
 // ---------------------------------------------------------------------------
 
 Deno.test("property: Quit events have zero key_code in canonical form", () => {
-  const buf = new ArrayBuffer(16);
-  const view = new DataView(buf);
+  let buf = new ArrayBuffer(16);
+  let view = new DataView(buf);
   view.setInt32(0, EventKind.Quit, true);
   // key_code, mouse_x, mouse_y must all be 0 for a canonical Quit event.
   view.setUint32(4, 0, true);
@@ -179,7 +176,7 @@ Deno.test("property: Quit events have zero key_code in canonical form", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("property: all modifier combinations fit in u8 (0..255)", () => {
-  const modValues = Object.values(Modifiers);
+  let modValues = Object.values(Modifiers);
   // Enumerate all 2^4 = 16 combinations of the 4 defined modifier flags.
   for (let mask = 0; mask < (1 << modValues.length); mask++) {
     let combined = 0;
@@ -192,7 +189,7 @@ Deno.test("property: all modifier combinations fit in u8 (0..255)", () => {
 });
 
 Deno.test("property: modifier flags are power-of-two (single-bit)", () => {
-  const singleBitFlags = [
+  let singleBitFlags = [
     Modifiers.SHIFT,
     Modifiers.CTRL,
     Modifiers.ALT,
@@ -211,14 +208,14 @@ Deno.test("property: modifier flags are power-of-two (single-bit)", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("property: event buffer built with all-zero fields is 16 bytes", () => {
-  const buf = new ArrayBuffer(16);
+  let buf = new ArrayBuffer(16);
   assertEquals(buf.byteLength, 16);
 });
 
 Deno.test("property: non-zero key_code does not overflow into adjacent fields", () => {
   // Build a Key event with max key_code.
-  const buf = new ArrayBuffer(16);
-  const view = new DataView(buf);
+  let buf = new ArrayBuffer(16);
+  let view = new DataView(buf);
   view.setInt32(0, EventKind.Key, true);
   view.setUint32(4, 0xFFFF_FFFF >>> 0, true);
   view.setUint8(8, Modifiers.NONE);
@@ -233,8 +230,8 @@ Deno.test("property: non-zero key_code does not overflow into adjacent fields", 
 });
 
 Deno.test("property: large mouse_x does not overflow into mouse_y", () => {
-  const buf = new ArrayBuffer(16);
-  const view = new DataView(buf);
+  let buf = new ArrayBuffer(16);
+  let view = new DataView(buf);
   view.setInt32(0, EventKind.Mouse, true);
   view.setUint32(4, 0, true);
   view.setUint8(8, 0);
@@ -244,4 +241,3 @@ Deno.test("property: large mouse_x does not overflow into mouse_y", () => {
     "mouse_y must not be affected by max mouse_x");
 });
 
-==================================== */

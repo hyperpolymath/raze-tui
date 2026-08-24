@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
-// Ported via Harvard Engine mechanical processor
+// Ported via Harvard Engine (Semantic pass)
 
 module event_types_test;
 
-// TODO: Complete semantic implementation
-
-/* === ORIGINAL TYPESCRIPT CONTEXT ===
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
 //
@@ -22,7 +19,7 @@ import { assertEquals, assertNotEquals } from "jsr:@std/assert";
 // ---------------------------------------------------------------------------
 
 /** Maps the EventKind enum to its C ABI integer representation. */
-const EventKind = {
+let EventKind = {
   None: 0,
   Key: 1,
   Mouse: 2,
@@ -30,13 +27,13 @@ const EventKind = {
   Quit: 4,
 } as const;
 
-type EventKindValue = (typeof EventKind)[keyof typeof EventKind];
+struct EventKindValue { (typeof EventKind)[keyof typeof EventKind];
 
 // ---------------------------------------------------------------------------
 // Modifier bit flags (matching SPARK Mod_* and Rust modifiers::*)
 // ---------------------------------------------------------------------------
 
-const Modifiers = {
+let Modifiers = {
   NONE: 0,
   SHIFT: 1,
   CTRL: 2,
@@ -48,7 +45,7 @@ const Modifiers = {
 // WidgetKind enum (matching Idris2 widgetKindToNat ABI)
 // ---------------------------------------------------------------------------
 
-const WidgetKind = {
+let WidgetKind = {
   None: 0,
   Label: 1,
   Input: 2,
@@ -71,10 +68,10 @@ const WidgetKind = {
 //   Total: 16 bytes
 // ---------------------------------------------------------------------------
 
-const EVENT_SIZE_BYTES = 16;
+let EVENT_SIZE_BYTES = 16;
 
 /** Field byte offsets within the 16-byte RazeEvent record. */
-const FieldOffset = {
+let FieldOffset = {
   kind: 0,
   key_code: 4,
   modifiers: 8,
@@ -85,7 +82,7 @@ const FieldOffset = {
 } as const;
 
 /** Field sizes in bytes. */
-const FieldSize = {
+let FieldSize = {
   kind: 4,
   key_code: 4,
   modifiers: 1,
@@ -99,15 +96,15 @@ const FieldSize = {
 // Helper: Build a 16-byte event buffer from field values.
 // ---------------------------------------------------------------------------
 
-function buildEvent(
+fn buildEvent(
   kind: EventKindValue,
   key_code: number,
   modifiers: number,
   mouse_x: number,
   mouse_y: number,
 ): Uint8Array {
-  const buf = new ArrayBuffer(EVENT_SIZE_BYTES);
-  const view = new DataView(buf);
+  let buf = new ArrayBuffer(EVENT_SIZE_BYTES);
+  let view = new DataView(buf);
   view.setInt32(FieldOffset.kind, kind, true); // little-endian
   view.setUint32(FieldOffset.key_code, key_code >>> 0, true);
   view.setUint8(FieldOffset.modifiers, modifiers & 0xFF);
@@ -118,14 +115,14 @@ function buildEvent(
   return new Uint8Array(buf);
 }
 
-function parseEvent(buf: Uint8Array): {
+fn parseEvent(buf: Uint8Array): {
   kind: number;
   key_code: number;
   modifiers: number;
   mouse_x: number;
   mouse_y: number;
 } {
-  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
   return {
     kind: view.getInt32(FieldOffset.kind, true),
     key_code: view.getUint32(FieldOffset.key_code, true),
@@ -166,8 +163,8 @@ Deno.test("all EventKind values are in [0, 4]", () => {
 });
 
 Deno.test("EventKind variants are mutually distinct", () => {
-  const vals = Object.values(EventKind);
-  const unique = new Set(vals);
+  let vals = Object.values(EventKind);
+  let unique = new Set(vals);
   assertEquals(unique.size, vals.length, "EventKind values must be unique");
 });
 
@@ -176,7 +173,7 @@ Deno.test("EventKind variants are mutually distinct", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("RazeEvent total size is 16 bytes", () => {
-  const buf = buildEvent(EventKind.None, 0, 0, 0, 0);
+  let buf = buildEvent(EventKind.None, 0, 0, 0, 0);
   assertEquals(buf.byteLength, 16);
 });
 
@@ -206,7 +203,7 @@ Deno.test("RazeEvent mouse_y field at offset 12, size 2", () => {
 });
 
 Deno.test("RazeEvent field layout sums to 16 bytes", () => {
-  const total = Object.values(FieldSize).reduce((a, b) => a + b, 0);
+  let total = Object.values(FieldSize).reduce((a, b) => a + b, 0);
   assertEquals(total, 16);
 });
 
@@ -215,31 +212,31 @@ Deno.test("RazeEvent field layout sums to 16 bytes", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("Key event: kind field reads back as EventKind.Key", () => {
-  const buf = buildEvent(EventKind.Key, 0x61, Modifiers.NONE, 0, 0);
-  const e = parseEvent(buf);
+  let buf = buildEvent(EventKind.Key, 0x61, Modifiers.NONE, 0, 0);
+  let e = parseEvent(buf);
   assertEquals(e.kind, EventKind.Key);
   assertEquals(e.key_code, 0x61);
 });
 
 Deno.test("Mouse event: kind field reads back as EventKind.Mouse", () => {
-  const buf = buildEvent(EventKind.Mouse, 0, Modifiers.NONE, 80, 24);
-  const e = parseEvent(buf);
+  let buf = buildEvent(EventKind.Mouse, 0, Modifiers.NONE, 80, 24);
+  let e = parseEvent(buf);
   assertEquals(e.kind, EventKind.Mouse);
   assertEquals(e.mouse_x, 80);
   assertEquals(e.mouse_y, 24);
 });
 
 Deno.test("Resize event: dimensions stored in mouse_x / mouse_y", () => {
-  const buf = buildEvent(EventKind.Resize, 0, 0, 132, 50);
-  const e = parseEvent(buf);
+  let buf = buildEvent(EventKind.Resize, 0, 0, 132, 50);
+  let e = parseEvent(buf);
   assertEquals(e.kind, EventKind.Resize);
   assertEquals(e.mouse_x, 132);
   assertEquals(e.mouse_y, 50);
 });
 
 Deno.test("Quit event: key_code and mouse fields are zero", () => {
-  const buf = buildEvent(EventKind.Quit, 0, 0, 0, 0);
-  const e = parseEvent(buf);
+  let buf = buildEvent(EventKind.Quit, 0, 0, 0, 0);
+  let e = parseEvent(buf);
   assertEquals(e.kind, EventKind.Quit);
   assertEquals(e.key_code, 0);
   assertEquals(e.mouse_x, 0);
@@ -274,12 +271,12 @@ Deno.test("modifier flags are mutually exclusive bits", () => {
 });
 
 Deno.test("all modifier flags combined fit in u8", () => {
-  const all = Modifiers.SHIFT | Modifiers.CTRL | Modifiers.ALT | Modifiers.SUPER;
+  let all = Modifiers.SHIFT | Modifiers.CTRL | Modifiers.ALT | Modifiers.SUPER;
   assertEquals(all <= 255, true, `Combined modifiers ${all} must fit in u8`);
 });
 
 Deno.test("Ctrl+Shift combination: both bits set", () => {
-  const mods = Modifiers.CTRL | Modifiers.SHIFT;
+  let mods = Modifiers.CTRL | Modifiers.SHIFT;
   assertEquals((mods & Modifiers.CTRL) !== 0, true);
   assertEquals((mods & Modifiers.SHIFT) !== 0, true);
   assertEquals((mods & Modifiers.ALT) !== 0, false);
@@ -301,9 +298,8 @@ Deno.test("WidgetKind has exactly 6 variants", () => {
 });
 
 Deno.test("WidgetKind values are mutually distinct", () => {
-  const vals = Object.values(WidgetKind);
-  const unique = new Set(vals);
+  let vals = Object.values(WidgetKind);
+  let unique = new Set(vals);
   assertEquals(unique.size, vals.length);
 });
 
-==================================== */

@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
-// Ported via Harvard Engine mechanical processor
+// Ported via Harvard Engine (Semantic pass)
 
 module tui_bench;
 
-// TODO: Complete semantic implementation
-
-/* === ORIGINAL TYPESCRIPT CONTEXT ===
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
 //
@@ -23,7 +20,7 @@ module tui_bench;
 // Shared constants
 // ---------------------------------------------------------------------------
 
-const EventKind = {
+let EventKind = {
   None: 0,
   Key: 1,
   Mouse: 2,
@@ -31,8 +28,8 @@ const EventKind = {
   Quit: 4,
 } as const;
 
-const EVENT_SIZE = 16;
-const BATCH_SIZE = 1_000;
+let EVENT_SIZE = 16;
+let BATCH_SIZE = 1_000;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -42,9 +39,9 @@ const BATCH_SIZE = 1_000;
  * Build a 16-byte Key event buffer.
  * Hot path: called once per benchmark iteration in batches.
  */
-function buildKeyEvent(code: number, mods: number): ArrayBuffer {
-  const buf = new ArrayBuffer(EVENT_SIZE);
-  const v = new DataView(buf);
+fn buildKeyEvent(code: number, mods: number): ArrayBuffer {
+  let buf = new ArrayBuffer(EVENT_SIZE);
+  let v = new DataView(buf);
   v.setInt32(0, EventKind.Key, true);
   v.setUint32(4, code >>> 0, true);
   v.setUint8(8, mods & 0xFF);
@@ -58,14 +55,14 @@ function buildKeyEvent(code: number, mods: number): ArrayBuffer {
 /**
  * Deserialize a 16-byte event buffer into component fields.
  */
-function parseEvent(buf: ArrayBuffer): {
+fn parseEvent(buf: ArrayBuffer): {
   kind: number;
   key_code: number;
   modifiers: number;
   mouse_x: number;
   mouse_y: number;
 } {
-  const v = new DataView(buf);
+  let v = new DataView(buf);
   return {
     kind: v.getInt32(0, true),
     key_code: v.getUint32(4, true),
@@ -79,7 +76,7 @@ function parseEvent(buf: ArrayBuffer): {
  * Dispatch on event kind, returning a string handler name.
  * Models the Rust match arm or SPARK case statement.
  */
-function dispatchKind(kind: number): string {
+fn dispatchKind(kind: number): string {
   switch (kind) {
     case EventKind.Key:    return "handle_key";
     case EventKind.Mouse:  return "handle_mouse";
@@ -92,7 +89,7 @@ function dispatchKind(kind: number): string {
 /**
  * Extract modifier flags from a u8 modifier byte.
  */
-function extractModifiers(mods: number): {
+fn extractModifiers(mods: number): {
   shift: boolean;
   ctrl: boolean;
   alt: boolean;
@@ -110,14 +107,14 @@ function extractModifiers(mods: number): {
  * Compute layout for a widget given terminal dimensions.
  * Models the resize event → layout recalculation path.
  */
-function computeLayout(width: number, height: number, widgetCount: number): {
+fn computeLayout(width: number, height: number, widgetCount: number): {
   cols: number;
   rows: number;
   cellWidth: number;
   cellHeight: number;
 } {
-  const cols = Math.max(1, Math.floor(Math.sqrt(widgetCount)));
-  const rows = Math.max(1, Math.ceil(widgetCount / cols));
+  let cols = Math.max(1, Math.floor(Math.sqrt(widgetCount)));
+  let rows = Math.max(1, Math.ceil(widgetCount / cols));
   return {
     cols,
     rows,
@@ -141,13 +138,13 @@ Deno.bench(`event buffer construction: build ${BATCH_SIZE} Key events`, () => {
 });
 
 Deno.bench("event deserialization: parse 1 Key event", () => {
-  const buf = buildKeyEvent(0x41, 0x00);
+  let buf = buildKeyEvent(0x41, 0x00);
   parseEvent(buf);
 });
 
 Deno.bench(`event deserialization: parse ${BATCH_SIZE} events`, () => {
   for (let i = 0; i < BATCH_SIZE; i++) {
-    const buf = buildKeyEvent(i & 0x7F, i & 0x0F);
+    let buf = buildKeyEvent(i & 0x7F, i & 0x0F);
     parseEvent(buf);
   }
 });
@@ -190,18 +187,17 @@ Deno.bench(`widget layout: ${BATCH_SIZE} resize → layout recalculations`, () =
 
 Deno.bench(`input buffer processing: build + parse + dispatch ${BATCH_SIZE} events`, () => {
   for (let i = 0; i < BATCH_SIZE; i++) {
-    const kind = i % 5;
-    const buf = new ArrayBuffer(EVENT_SIZE);
-    const v = new DataView(buf);
+    let kind = i % 5;
+    let buf = new ArrayBuffer(EVENT_SIZE);
+    let v = new DataView(buf);
     v.setInt32(0, kind, true);
     v.setUint32(4, i >>> 0, true);
     v.setUint8(8, i & 0x0F);
     v.setUint16(10, i & 0xFFFF, true);
     v.setUint16(12, (i >> 8) & 0xFFFF, true);
-    const e = parseEvent(buf);
+    let e = parseEvent(buf);
     dispatchKind(e.kind);
     extractModifiers(e.modifiers);
   }
 });
 
-==================================== */
