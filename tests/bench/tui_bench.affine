@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
+// Ported via Harvard Engine mechanical processor
+
+module tui_bench;
+
+// TODO: Complete semantic implementation
+
+/* === ORIGINAL TYPESCRIPT CONTEXT ===
+// SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
 //
 // Benchmarks for raze-tui event processing pipeline.
@@ -195,3 +203,5 @@ Deno.bench(`input buffer processing: build + parse + dispatch ${BATCH_SIZE} even
     extractModifiers(e.modifiers);
   }
 });
+
+==================================== */

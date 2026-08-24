@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
+// Ported via Harvard Engine mechanical processor
+
+module event_properties_test;
+
+// TODO: Complete semantic implementation
+
+/* === ORIGINAL TYPESCRIPT CONTEXT ===
+// SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
 //
 // Property-based tests for raze-tui event types.
@@ -235,3 +243,5 @@ Deno.test("property: large mouse_x does not overflow into mouse_y", () => {
   assertEquals(view.getUint16(12, true), 0,
     "mouse_y must not be affected by max mouse_x");
 });
+
+==================================== */
