@@ -1,13 +1,8 @@
-<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
-<!-- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) -->
-<!-- TOPOLOGY.md -- Project architecture map and completion dashboard -->
-<!-- Last updated: 2026-03-20 -->
+== RAZE-TUI – Project Topology
 
-# RAZE-TUI -- Project Topology
+=== Component Map
 
-## Component Map
-
-```
+....
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        RAZE-TUI COMPONENT MAP                         │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -80,11 +75,11 @@
 │  │  hooks/              -- Git hooks                              │   │
 │  └────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
-```
+....
 
-## Data Flow Diagram
+=== Data Flow Diagram
 
-```
+....
                          INPUT                              OUTPUT
                            │                                  ▲
                            ▼                                  │
@@ -124,11 +119,11 @@
               │ - Application state    │
               │ - Background tasks     │
               └────────────────────────┘
-```
+....
 
-## Dependency Graph
+=== Dependency Graph
 
-```
+....
 Build-time dependencies (arrows point from dependent to dependency):
 
   Idris2 ABI (src/abi/*.idr)
@@ -160,11 +155,11 @@ Runtime call graph:
                             │
                             ▼
                        Terminal I/O
-```
+....
 
-## Formal Verification Coverage
+=== Formal Verification Coverage
 
-```
+....
 COMPONENT                          VERIFIED BY     PROOF TECHNIQUE
 ─────────────────────────────────  ──────────────  ─────────────────────────
 INTERFACE LAYER
@@ -188,11 +183,11 @@ BRIDGE LAYER
 CONSUMER LAYER
   Rust type safety                 Rust compiler   Borrow checker + no_std
   No unsafe code                   Rust compiler   forbid(unsafe_code)
-```
+....
 
-## Completion Dashboard
+=== Completion Dashboard
 
-```
+....
 COMPONENT                          STATUS              NOTES
 ─────────────────────────────────  ──────────────────  ─────────────────────────────────
 ABI & VERIFICATION
@@ -229,11 +224,11 @@ CONTRACTILES
 
 ─────────────────────────────────────────────────────────────────────────────
 OVERALL:                            ██████░░░░  ~55%   Phase 2 terminal backend complete
-```
+....
 
-## Build Dependency Chain
+=== Build Dependency Chain
 
-```
+....
 Step  Tool       Input                          Output
 ────  ─────────  ─────────────────────────────  ──────────────────────────────
  1    idris2     src/abi/*.idr                  generated/abi/raze_abi.h
@@ -244,34 +239,55 @@ Step  Tool       Input                          Output
                  libraze_bridge.a               libraze_ada.a (library)
  5    cargo      rust/src/lib.rs +              libraze_core.rlib or
                  libraze_bridge.a               consumer binary
-```
+....
 
-## Module Relationships
+=== Module Relationships
 
-| Module | Language | Depends On | Provides |
-|--------|----------|------------|----------|
-| `src/abi/Types.idr` | Idris2 | -- | Type definitions with proofs |
-| `src/abi/Layout.idr` | Idris2 | Types.idr | Memory layout proofs |
-| `src/abi/Foreign.idr` | Idris2 | Types.idr, Layout.idr | FFI signatures |
-| `generated/abi/raze_abi.h` | C | Foreign.idr (generated) | C struct/function decls |
-| `zig/src/bridge.zig` | Zig | raze_abi.h | C ABI exports, lifetime mgmt |
-| `ada/src/raze.ads` | Ada | raze_abi.h | Root package, FFI type bindings |
-| `src/spark/raze-terminal.ads` | SPARK | Raze.State, Raze.Widgets | ANSI escape sequence generation |
-| `src/spark/raze-input_parser.ads` | SPARK | Raze.Events | Byte-to-event parsing |
-| `src/ada/raze-posix.ads` | Ada | Raze.Terminal, Raze.Input_Parser | POSIX raw mode, I/O |
-| `src/ada/raze-tui.ads` | Ada | Raze.State, Raze.Events | TUI interface, contracts |
-| `src/ada/raze-tui.adb` | Ada | Raze.Posix, Raze.Terminal, Raze.Input_Parser | Integration layer |
-| `src/ada/raze_tui_main.adb` | Ada | Raze.Tui | Entry point demo |
-| `src/rust/src/lib.rs` | Rust | bridge.zig (C ABI) | Consumer crate |
+[width="100%",cols="20%,25%,30%,25%",options="header",]
+|===
+|Module |Language |Depends On |Provides
+|`+src/abi/Types.idr+` |Idris2 |– |Type definitions with proofs
 
-## Update Protocol
+|`+src/abi/Layout.idr+` |Idris2 |Types.idr |Memory layout proofs
+
+|`+src/abi/Foreign.idr+` |Idris2 |Types.idr, Layout.idr |FFI signatures
+
+|`+generated/abi/raze_abi.h+` |C |Foreign.idr (generated) |C
+struct/function decls
+
+|`+zig/src/bridge.zig+` |Zig |raze_abi.h |C ABI exports, lifetime mgmt
+
+|`+ada/src/raze.ads+` |Ada |raze_abi.h |Root package, FFI type bindings
+
+|`+src/spark/raze-terminal.ads+` |SPARK |Raze.State, Raze.Widgets |ANSI
+escape sequence generation
+
+|`+src/spark/raze-input_parser.ads+` |SPARK |Raze.Events |Byte-to-event
+parsing
+
+|`+src/ada/raze-posix.ads+` |Ada |Raze.Terminal, Raze.Input_Parser
+|POSIX raw mode, I/O
+
+|`+src/ada/raze-tui.ads+` |Ada |Raze.State, Raze.Events |TUI interface,
+contracts
+
+|`+src/ada/raze-tui.adb+` |Ada |Raze.Posix, Raze.Terminal,
+Raze.Input_Parser |Integration layer
+
+|`+src/ada/raze_tui_main.adb+` |Ada |Raze.Tui |Entry point demo
+
+|`+src/rust/src/lib.rs+` |Rust |bridge.zig (C ABI) |Consumer crate
+|===
+
+=== Update Protocol
 
 This file is maintained by both humans and AI agents. When updating:
 
-1. **After completing a component**: Change its bar and percentage
-2. **After adding a component**: Add a new row in the appropriate section
-3. **After architectural changes**: Update the ASCII diagrams
-4. **Date**: Update the `Last updated` comment at the top of this file
+[arabic]
+. *After completing a component*: Change its bar and percentage
+. *After adding a component*: Add a new row in the appropriate section
+. *After architectural changes*: Update the ASCII diagrams
+. *Date*: Update the `+Last updated+` comment at the top of this file
 
-Progress bars use: `█` (filled) and `░` (empty), 10 characters wide.
-Percentages: 0%, 10%, 20%, ... 100% (in 10% increments).
+Progress bars use: `+█+` (filled) and `+░+` (empty), 10 characters wide.
+Percentages: 0%, 10%, 20%, … 100% (in 10% increments).
