@@ -15,7 +15,7 @@ toolbox enter raze-tui-dev
 
 # Verify setup
 
-just check   # or: cargo check / mix compile / etc.
+just check-abi
 just test    # Run test suite
 
 ### Repository Structure
