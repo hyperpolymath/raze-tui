@@ -275,7 +275,7 @@ These principles guide every phase:
 
 == Contributing
 
-Contributions welcome. See link:CONTRIBUTING.md[CONTRIBUTING.md] for guidelines.
+Contributions welcome. See link:.github/CONTRIBUTING.md[CONTRIBUTING.md] for guidelines.
 
 Priority areas by phase:
 
