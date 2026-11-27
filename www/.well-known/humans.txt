@@ -18,4 +18,4 @@ Standards: Consent-Aware HTTP, RSR
 /* PHILOSOPHY */
 Design: Reversibility-first
 Ethics: Consent-aware
-Language: Tier 1 RSR (Rust, Elixir, Zig, Ada, Haskell, ReScript)
+Language: Tier 1 RSR (Rust, Elixir, Zig, Ada, Haskell, AffineScript)
